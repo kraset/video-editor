@@ -47,6 +47,9 @@ const playPauseBtn = document.getElementById(
 const progress = document.getElementById("progress") as HTMLInputElement;
 const actionsSection = document.getElementById("actions") as HTMLDivElement;
 const btnTrim = document.getElementById("btn-trim") as HTMLButtonElement;
+const btnDownsample = document.getElementById(
+  "btn-downsample",
+) as HTMLButtonElement;
 const configSection = document.getElementById(
   "config-section",
 ) as HTMLDivElement;
@@ -62,6 +65,18 @@ const btnCancelTrim = document.getElementById(
 ) as HTMLButtonElement;
 const labelStart = document.getElementById("label-start") as HTMLSpanElement;
 const labelEnd = document.getElementById("label-end") as HTMLSpanElement;
+const configSectionDs = document.getElementById(
+  "config-section-downsample",
+) as HTMLDivElement;
+const inputNthFrame = document.getElementById(
+  "input-nth-frame",
+) as HTMLInputElement;
+const btnExecuteDs = document.getElementById(
+  "btn-execute-downsample",
+) as HTMLButtonElement;
+const btnCancelDs = document.getElementById(
+  "btn-cancel-downsample",
+) as HTMLButtonElement;
 const statusSection = document.getElementById(
   "status-section",
 ) as HTMLDivElement;
@@ -73,6 +88,7 @@ const enum AppState {
   WaitingForMediaSelection,
   ReadyForAction,
   Trim,
+  Downsample,
 }
 
 let appState: AppState = AppState.WaitingForMediaSelection;
@@ -91,6 +107,7 @@ function setState(next: AppState): void {
   setHidden(playerWrapper, !hasMedia);
   setHidden(actionsSection, next !== AppState.ReadyForAction);
   setHidden(configSection, next !== AppState.Trim);
+  setHidden(configSectionDs, next !== AppState.Downsample);
   setHidden(statusSection, !hasMedia);
   if (next === AppState.Trim) {
     rangeStart = null;
@@ -102,7 +119,7 @@ function setState(next: AppState): void {
 // ── File selection ────────────────────────────────────────────────────────────
 
 function loadVideo(file: File): void {
-  currentVideoPath = (file as File & { path?: string }).path ?? null;
+  currentVideoPath = window.electronAPI.getFilePath(file);
   video.src = URL.createObjectURL(file);
   setState(AppState.ReadyForAction);
 }
@@ -190,6 +207,7 @@ function updateProgressFill(): void {
 // ── Actions — ReadyForAction state ────────────────────────────────────────────
 
 btnTrim.addEventListener("click", () => setState(AppState.Trim));
+btnDownsample.addEventListener("click", () => setState(AppState.Downsample));
 
 // ── Trim config — Trim state ──────────────────────────────────────────────────
 
@@ -229,6 +247,23 @@ btnExecuteTrim.addEventListener("click", async () => {
     formatTime(rangeEnd),
   );
   btnExecuteTrim.disabled = false;
+  setState(AppState.ReadyForAction);
+  statusText.textContent = result.success
+    ? `\u2713 Saved: ${result.outputPath}`
+    : `\u2717 Error: ${result.error}`;
+});
+
+// ── Downsample config — Downsample state ──────────────────────────────────────
+
+btnCancelDs.addEventListener("click", () => setState(AppState.ReadyForAction));
+
+btnExecuteDs.addEventListener("click", async () => {
+  if (!currentVideoPath) return;
+  const n = Math.max(1, Math.min(10, Number(inputNthFrame.value) || 2));
+  btnExecuteDs.disabled = true;
+  statusText.textContent = "Downsampling\u2026";
+  const result = await window.electronAPI.downsampleVideo(currentVideoPath, n);
+  btnExecuteDs.disabled = false;
   setState(AppState.ReadyForAction);
   statusText.textContent = result.success
     ? `\u2713 Saved: ${result.outputPath}`

@@ -59,7 +59,9 @@ app.on("activate", () => {
   }
 });
 
-// ── IPC handlers ────────────────────────────────────────────────────────────
+// ── IPC handlers ─────────────────────────────────────────────────────────────
+
+const FFMPEG = "C:\\eget\\ffmpeg6\\bin\\ffmpeg.exe";
 
 ipcMain.handle("dialog:open-video", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -73,8 +75,6 @@ ipcMain.handle("dialog:open-video", async () => {
   });
   return canceled ? null : filePaths[0];
 });
-
-const FFMPEG = "C:\\eget\\ffmpeg6\\bin\\ffmpeg.exe";
 
 ipcMain.handle(
   "trim:run",
@@ -97,6 +97,30 @@ ipcMain.handle(
       "-y",
       outputPath,
     ];
+
+    try {
+      await execFileAsync(FFMPEG, args);
+      return { success: true, outputPath };
+    } catch (err: unknown) {
+      return { success: false, error: String(err) };
+    }
+  },
+);
+
+ipcMain.handle(
+  "downsample:run",
+  async (_event, filePath: string, nthFrame: number) => {
+    const ext = path.extname(filePath);
+    const base = path.basename(filePath, ext);
+    const outputPath = path.join(
+      process.cwd(),
+      `${base}_downsampled_${nthFrame}.mp4`,
+    );
+
+    // \, escapes the comma inside the select expression so ffmpeg doesn't
+    // treat it as a filter separator.
+    const vf = `select='not(mod(n\\,${nthFrame}))',setpts=N/FRAME_RATE/TB`;
+    const args = ["-i", filePath, "-vf", vf, "-an", "-y", outputPath];
 
     try {
       await execFileAsync(FFMPEG, args);

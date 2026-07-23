@@ -47,9 +47,7 @@
     <!-- Action buttons (ReadyForAction state) -->
     <div id="actions" hidden>
       <button class="action-btn" id="btn-trim">Trim</button>
-      <button class="action-btn" id="btn-downsample" disabled>
-        Downsample
-      </button>
+      <button class="action-btn" id="btn-downsample">Downsample</button>
       <button class="action-btn" id="btn-crop" disabled>Crop</button>
     </div>
 
@@ -63,6 +61,27 @@
         Execute Trim!
       </button>
       <button class="action-btn cancel" id="btn-cancel-trim">Cancel</button>
+    </div>
+
+    <!-- Downsample config (Downsample state) -->
+    <div id="config-section-downsample" hidden>
+      <label class="config-label" for="input-nth-frame"
+        >Take Every Nth frame</label
+      >
+      <input
+        class="config-number"
+        type="number"
+        id="input-nth-frame"
+        value="2"
+        min="1"
+        max="10"
+      />
+      <button class="action-btn execute" id="btn-execute-downsample">
+        Execute Downsample!
+      </button>
+      <button class="action-btn cancel" id="btn-cancel-downsample">
+        Cancel
+      </button>
     </div>
 
     <!-- Status (shown whenever media is loaded) -->
