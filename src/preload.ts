@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("dialog:open-video"),
   trimVideo: (
     filePath: string,
+    startTime: string,
+    endTime: string,
   ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
-    ipcRenderer.invoke("trim:run", filePath),
+    ipcRenderer.invoke("trim:run", filePath, startTime, endTime),
 });

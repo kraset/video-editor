@@ -75,33 +75,34 @@ ipcMain.handle("dialog:open-video", async () => {
 });
 
 const FFMPEG = "C:\\eget\\ffmpeg6\\bin\\ffmpeg.exe";
-const TRIM_START = "00:00:00";
-const TRIM_END = "00:00:03";
 
-ipcMain.handle("trim:run", async (_event, filePath: string) => {
-  const ext = path.extname(filePath);
-  const base = path.basename(filePath, ext);
-  const outputPath = path.join(process.cwd(), `${base}_trimmed.mp4`);
+ipcMain.handle(
+  "trim:run",
+  async (_event, filePath: string, startTime: string, endTime: string) => {
+    const ext = path.extname(filePath);
+    const base = path.basename(filePath, ext);
+    const outputPath = path.join(process.cwd(), `${base}_trimmed.mp4`);
 
-  const args = [
-    "-ss",
-    TRIM_START,
-    "-to",
-    TRIM_END,
-    "-i",
-    filePath,
-    "-force_key_frames",
-    "expr:gte(t,n_forced*10)",
-    "-c",
-    "copy",
-    "-y", // overwrite output without asking
-    outputPath,
-  ];
+    const args = [
+      "-ss",
+      startTime,
+      "-to",
+      endTime,
+      "-i",
+      filePath,
+      "-force_key_frames",
+      "expr:gte(t,n_forced*10)",
+      "-c",
+      "copy",
+      "-y",
+      outputPath,
+    ];
 
-  try {
-    await execFileAsync(FFMPEG, args);
-    return { success: true, outputPath };
-  } catch (err: unknown) {
-    return { success: false, error: String(err) };
-  }
-});
+    try {
+      await execFileAsync(FFMPEG, args);
+      return { success: true, outputPath };
+    } catch (err: unknown) {
+      return { success: false, error: String(err) };
+    }
+  },
+);

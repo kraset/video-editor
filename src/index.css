@@ -211,3 +211,57 @@ body {
   font-size: 0.82rem;
   color: #888;
 }
+
+/* ── Trim config section ──────────────────────────────────────────────────────── */
+
+#config-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#config-section[hidden],
+#actions[hidden],
+#status-section[hidden],
+#player-wrapper[hidden] {
+  display: none;
+}
+
+.time-label {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9rem;
+  color: #4a9eff;
+  min-width: 8ch;
+}
+
+.action-btn.execute {
+  background: #1a4a1a;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.action-btn.execute:hover:not(:disabled) {
+  background: #235c23;
+  border-color: #66bb6a;
+}
+
+.action-btn.cancel {
+  border-color: #666;
+  color: #aaa;
+}
+
+.action-btn.cancel:hover:not(:disabled) {
+  background: #3a3a3a;
+  border-color: #999;
+  color: #eee;
+}
+
+/* ── Status section ────────────────────────────────────────────────────────────── */
+
+#status-section {
+  font-size: 0.85rem;
+  color: #888;
+  min-height: 1.2em;
+}

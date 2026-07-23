@@ -44,14 +44,30 @@
       </div>
     </div>
 
-    <!-- Action buttons - shown when a video is loaded -->
+    <!-- Action buttons (ReadyForAction state) -->
     <div id="actions" hidden>
       <button class="action-btn" id="btn-trim">Trim</button>
       <button class="action-btn" id="btn-downsample" disabled>
         Downsample
       </button>
       <button class="action-btn" id="btn-crop" disabled>Crop</button>
-      <span id="action-status"></span>
+    </div>
+
+    <!-- Trim config (Trim state) -->
+    <div id="config-section" hidden>
+      <button class="action-btn" id="btn-set-start">Set Start</button>
+      <span class="time-label" id="label-start">--:--:--</span>
+      <button class="action-btn" id="btn-set-end">Set End</button>
+      <span class="time-label" id="label-end">--:--:--</span>
+      <button class="action-btn execute" id="btn-execute-trim" hidden>
+        Execute Trim!
+      </button>
+      <button class="action-btn cancel" id="btn-cancel-trim">Cancel</button>
+    </div>
+
+    <!-- Status (shown whenever media is loaded) -->
+    <div id="status-section" hidden>
+      <span id="status-text"></span>
     </div>
 
     <script type="module" src="/src/renderer.ts"></script>
