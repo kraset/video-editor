@@ -1,8 +1,175 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
-  margin: auto;
-  max-width: 38rem;
-  padding: 2rem;
+  margin: 0;
+  padding: 24px;
+  background: #111;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ── Drop zone ─────────────────────────────────────────────────────────────── */
+
+#drop-zone {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  justify-content: center;
+}
+
+#drop-zone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  border: 2px dashed #555;
+  border-radius: 12px;
+  padding: 60px 80px;
+  color: #888;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+  cursor: pointer;
+}
+
+#drop-zone.drag-over #drop-zone-inner {
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+#drop-zone-inner p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+#pick-file-btn {
+  margin-top: 4px;
+  padding: 10px 28px;
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#pick-file-btn:hover {
+  background: #2f82e0;
+}
+
+#file-input {
+  display: none;
+}
+
+/* ── Player ────────────────────────────────────────────────────────────────── */
+
+#player-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+#video-container {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Landscape: max-width 1000px */
+#video-container.landscape video {
+  max-width: 1000px;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Portrait: max-height 800px, width follows aspect ratio */
+#video-container.portrait video {
+  max-height: 800px;
+  width: auto;
+  height: 100%;
+  display: block;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 0;
+  width: 100%;
+}
+
+#play-pause-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: #333;
+  color: #eee;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+#play-pause-btn:hover {
+  background: #4a9eff;
+}
+
+/* ── Progress range input ──────────────────────────────────────────────────── */
+
+#progress {
+  flex: 1;
+  --val: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(
+    to right,
+    #4a9eff 0%,
+    #4a9eff var(--val),
+    #444 var(--val),
+    #444 100%
+  );
+}
+
+#progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4a9eff;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+#progress::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4a9eff;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }

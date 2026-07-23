@@ -2,12 +2,48 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
-
+    <title>Video Editor</title>
   </head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application app.</p>
+    <!-- Shown when no video is loaded -->
+    <div id="drop-zone">
+      <div id="drop-zone-inner">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <p>Drag &amp; drop a video file here</p>
+        <button id="pick-file-btn">Pick a file</button>
+      </div>
+    </div>
+
+    <!-- Shown when a video is loaded -->
+    <div id="player-wrapper" hidden>
+      <div id="video-container">
+        <video id="video"></video>
+        <div id="controls">
+          <button id="play-pause-btn" aria-label="Play">&#9654;</button>
+          <input
+            type="range"
+            id="progress"
+            min="0"
+            max="100"
+            value="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/renderer.ts"></script>
   </body>
 </html>
