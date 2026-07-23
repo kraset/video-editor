@@ -272,7 +272,7 @@ body {
 .action-btn.execute {
   background: #1a4a1a;
   border-color: #4caf50;
-  color: #4caf50;
+  color: #ffffff;
 }
 
 .action-btn.execute:hover:not(:disabled) {

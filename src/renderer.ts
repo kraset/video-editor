@@ -323,14 +323,15 @@ function clearCropCanvas(): void {
   ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
 }
 
-function drawCropRect(): void {
-  if (!cropStart || !cropEnd) return;
+function drawCropRect(end?: { x: number; y: number }): void {
+  const endPt = end ?? cropEnd;
+  if (!cropStart || !endPt) return;
   const ctx = cropCanvas.getContext("2d")!;
   ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
-  const x = Math.min(cropStart.x, cropEnd.x);
-  const y = Math.min(cropStart.y, cropEnd.y);
-  const w = Math.abs(cropEnd.x - cropStart.x);
-  const h = Math.abs(cropEnd.y - cropStart.y);
+  const x = Math.min(cropStart.x, endPt.x);
+  const y = Math.min(cropStart.y, endPt.y);
+  const w = Math.abs(endPt.x - cropStart.x);
+  const h = Math.abs(endPt.y - cropStart.y);
   ctx.strokeStyle = "white";
   ctx.lineWidth = 2;
   ctx.strokeRect(x, y, w, h);
@@ -342,24 +343,40 @@ function drawCropRect(): void {
   ctx.fillRect(x + w, y, cropCanvas.width - x - w, h); // right
 }
 
-function updateCropDisplay(): void {
+function updateCropDisplay(end?: { x: number; y: number }): void {
+  const endPt = end ?? cropEnd;
   const rect = video.getBoundingClientRect();
   const scaleX = rect.width > 0 ? video.videoWidth / rect.width : 1;
   const scaleY = rect.height > 0 ? video.videoHeight / rect.height : 1;
   const x1 = cropStart
-    ? Math.round(Math.min(cropStart.x, cropEnd?.x ?? cropStart.x) * scaleX)
+    ? Math.round(Math.min(cropStart.x, endPt?.x ?? cropStart.x) * scaleX)
     : 0;
   const y1 = cropStart
-    ? Math.round(Math.min(cropStart.y, cropEnd?.y ?? cropStart.y) * scaleY)
+    ? Math.round(Math.min(cropStart.y, endPt?.y ?? cropStart.y) * scaleY)
     : 0;
-  const x2 = cropEnd
-    ? Math.round(Math.max(cropStart!.x, cropEnd.x) * scaleX)
+  const x2 = endPt
+    ? Math.round(Math.max(cropStart!.x, endPt.x) * scaleX)
     : video.videoWidth;
-  const y2 = cropEnd
-    ? Math.round(Math.max(cropStart!.y, cropEnd.y) * scaleY)
+  const y2 = endPt
+    ? Math.round(Math.max(cropStart!.y, endPt.y) * scaleY)
     : video.videoHeight;
   cropCoordDisplay.textContent = `Define crop area: top-left (${x1}, ${y1}) → bottom-right (${x2}, ${y2})`;
 }
+
+cropCanvas.addEventListener("pointermove", (e) => {
+  if (!cropStart || cropEnd) return; // only preview after first click
+  const rect = cropCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  // Only draw preview when pointer is to the right of and below the start point
+  if (x > cropStart.x && y > cropStart.y) {
+    drawCropRect({ x, y });
+    updateCropDisplay({ x, y });
+  } else {
+    clearCropCanvas();
+    updateCropDisplay();
+  }
+});
 
 cropCanvas.addEventListener("click", (e) => {
   const rect = cropCanvas.getBoundingClientRect();
