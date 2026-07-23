@@ -1,6 +1,10 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import started from "electron-squirrel-startup";
+
+const execFileAsync = promisify(execFile);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -68,4 +72,36 @@ ipcMain.handle("dialog:open-video", async () => {
     ],
   });
   return canceled ? null : filePaths[0];
+});
+
+const FFMPEG = "C:\\eget\\ffmpeg6\\bin\\ffmpeg.exe";
+const TRIM_START = "00:00:00";
+const TRIM_END = "00:00:03";
+
+ipcMain.handle("trim:run", async (_event, filePath: string) => {
+  const ext = path.extname(filePath);
+  const base = path.basename(filePath, ext);
+  const outputPath = path.join(process.cwd(), `${base}_trimmed.mp4`);
+
+  const args = [
+    "-ss",
+    TRIM_START,
+    "-to",
+    TRIM_END,
+    "-i",
+    filePath,
+    "-force_key_frames",
+    "expr:gte(t,n_forced*10)",
+    "-c",
+    "copy",
+    "-y", // overwrite output without asking
+    outputPath,
+  ];
+
+  try {
+    await execFileAsync(FFMPEG, args);
+    return { success: true, outputPath };
+  } catch (err: unknown) {
+    return { success: false, error: String(err) };
+  }
 });

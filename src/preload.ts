@@ -6,4 +6,8 @@ import { contextBridge, ipcRenderer } from "electron";
 contextBridge.exposeInMainWorld("electronAPI", {
   openVideo: (): Promise<string | null> =>
     ipcRenderer.invoke("dialog:open-video"),
+  trimVideo: (
+    filePath: string,
+  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
+    ipcRenderer.invoke("trim:run", filePath),
 });

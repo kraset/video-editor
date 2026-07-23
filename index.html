@@ -44,6 +44,16 @@
       </div>
     </div>
 
+    <!-- Action buttons - shown when a video is loaded -->
+    <div id="actions" hidden>
+      <button class="action-btn" id="btn-trim">Trim</button>
+      <button class="action-btn" id="btn-downsample" disabled>
+        Downsample
+      </button>
+      <button class="action-btn" id="btn-crop" disabled>Crop</button>
+      <span id="action-status"></span>
+    </div>
+
     <script type="module" src="/src/renderer.ts"></script>
   </body>
 </html>

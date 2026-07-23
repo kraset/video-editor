@@ -43,26 +43,53 @@ const playPauseBtn = document.getElementById(
   "play-pause-btn",
 ) as HTMLButtonElement;
 const progress = document.getElementById("progress") as HTMLInputElement;
+const actionsSection = document.getElementById("actions") as HTMLDivElement;
+const btnTrim = document.getElementById("btn-trim") as HTMLButtonElement;
+const actionStatus = document.getElementById(
+  "action-status",
+) as HTMLSpanElement;
+
+let currentVideoPath: string | null = null;
 
 // ── File selection ──────────────────────────────────────────────────────────
 
 function loadVideo(file: File): void {
+  // Electron exposes the real filesystem path on File objects.
+  currentVideoPath = (file as File & { path?: string }).path ?? null;
   video.src = URL.createObjectURL(file);
   showPlayer();
 }
 
 function loadVideoFromPath(filePath: string): void {
+  currentVideoPath = filePath;
   video.src = `file:///${filePath.replace(/\\/g, "/")}`;
   showPlayer();
 }
 
 function showPlayer(): void {
   playerWrapper.removeAttribute("hidden");
+  actionsSection.removeAttribute("hidden");
+  actionStatus.textContent = "";
 }
 
 pickFileBtn.addEventListener("click", async () => {
   const filePath = await window.electronAPI.openVideo();
   if (filePath) loadVideoFromPath(filePath);
+});
+
+// ── Trim ─────────────────────────────────────────────────────────────────────
+
+btnTrim.addEventListener("click", async () => {
+  if (!currentVideoPath) return;
+  btnTrim.disabled = true;
+  actionStatus.textContent = "Trimming…";
+  const result = await window.electronAPI.trimVideo(currentVideoPath);
+  btnTrim.disabled = false;
+  if (result.success) {
+    actionStatus.textContent = `✓ Saved: ${result.outputPath}`;
+  } else {
+    actionStatus.textContent = `✗ Error: ${result.error}`;
+  }
 });
 
 // ── Drag & drop ─────────────────────────────────────────────────────────────
