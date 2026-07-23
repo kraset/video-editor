@@ -98,6 +98,22 @@ const btnCancelCrop = document.getElementById(
   "btn-cancel-crop",
 ) as HTMLButtonElement;
 const cropCanvas = document.getElementById("crop-canvas") as HTMLCanvasElement;
+const btnConvert = document.getElementById("btn-convert") as HTMLButtonElement;
+const configSectionConvert = document.getElementById(
+  "config-section-convert",
+) as HTMLDivElement;
+const inputSrcFormat = document.getElementById(
+  "input-src-format",
+) as HTMLInputElement;
+const inputDestFormat = document.getElementById(
+  "input-dest-format",
+) as HTMLInputElement;
+const btnExecuteConvert = document.getElementById(
+  "btn-execute-convert",
+) as HTMLButtonElement;
+const btnCancelConvert = document.getElementById(
+  "btn-cancel-convert",
+) as HTMLButtonElement;
 
 // ── App State ─────────────────────────────────────────────────────────────────
 
@@ -107,6 +123,7 @@ const enum AppState {
   Trim,
   Downsample,
   Crop,
+  Convert,
 }
 
 let appState: AppState = AppState.WaitingForMediaSelection;
@@ -127,6 +144,7 @@ function setState(next: AppState): void {
   setHidden(configSection, next !== AppState.Trim);
   setHidden(configSectionDs, next !== AppState.Downsample);
   setHidden(configSectionCrop, next !== AppState.Crop);
+  setHidden(configSectionConvert, next !== AppState.Convert);
   setHidden(statusSection, !hasMedia);
   if (next === AppState.Trim) {
     rangeStart = null;
@@ -431,6 +449,32 @@ btnExecuteCrop.addEventListener("click", async () => {
     y1,
   );
   btnExecuteCrop.disabled = false;
+  setState(AppState.ReadyForAction);
+  statusText.textContent = result.success
+    ? `✓ Saved: ${result.outputPath}`
+    : `✗ Error: ${result.error}`;
+});
+
+// ── Convert Format ──────────────────────────────────────────────────────────────────
+
+btnConvert.addEventListener("click", () => setState(AppState.Convert));
+
+btnCancelConvert.addEventListener("click", () =>
+  setState(AppState.ReadyForAction),
+);
+
+btnExecuteConvert.addEventListener("click", async () => {
+  if (!currentVideoPath) return;
+  const srcFmt = inputSrcFormat.value.trim().replace(/^\./, "");
+  const destFmt = inputDestFormat.value.trim().replace(/^\./, "");
+  btnExecuteConvert.disabled = true;
+  statusText.textContent = "Converting…";
+  const result = await window.electronAPI.convertVideo(
+    currentVideoPath,
+    srcFmt,
+    destFmt,
+  );
+  btnExecuteConvert.disabled = false;
   setState(AppState.ReadyForAction);
   statusText.textContent = result.success
     ? `✓ Saved: ${result.outputPath}`

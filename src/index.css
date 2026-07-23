@@ -225,6 +225,7 @@ body {
 #config-section[hidden],
 #config-section-downsample[hidden],
 #config-section-crop[hidden],
+#config-section-convert[hidden],
 #actions[hidden],
 #status-section[hidden],
 #player-wrapper[hidden] {
@@ -258,6 +259,22 @@ body {
 }
 
 .config-number:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.config-text {
+  width: 72px;
+  padding: 6px 8px;
+  background: #1e1e1e;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.config-text:focus {
   outline: none;
   border-color: #4a9eff;
 }

@@ -33,6 +33,15 @@ declare global {
         outputPath?: string;
         error?: string;
       }>;
+      convertVideo: (
+        filePath: string,
+        srcFormat: string,
+        destFormat: string,
+      ) => Promise<{
+        success: boolean;
+        outputPath?: string;
+        error?: string;
+      }>;
     };
   }
 }

@@ -164,3 +164,29 @@ ipcMain.handle(
     }
   },
 );
+
+ipcMain.handle(
+  "convert:run",
+  async (_event, filePath: string, _srcFormat: string, destFormat: string) => {
+    const ext = path.extname(filePath);
+    const base = path.basename(filePath, ext);
+    const dir = path.dirname(filePath);
+    const outputPath = path.join(dir, `${base}.${destFormat}`);
+    const args = [
+      "-fflags",
+      "+genpts",
+      "-i",
+      filePath,
+      "-c",
+      "copy",
+      "-y",
+      outputPath,
+    ];
+    try {
+      await execFileAsync(FFMPEG, args);
+      return { success: true, outputPath };
+    } catch (err: unknown) {
+      return { success: false, error: String(err) };
+    }
+  },
+);

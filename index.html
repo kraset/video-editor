@@ -52,6 +52,7 @@
       <button class="action-btn" id="btn-trim">Trim</button>
       <button class="action-btn" id="btn-downsample">Downsample</button>
       <button class="action-btn" id="btn-crop">Crop</button>
+      <button class="action-btn" id="btn-convert">Convert Format</button>
     </div>
 
     <!-- Trim config (Trim state) -->
@@ -102,6 +103,28 @@
         </button>
         <button class="action-btn cancel" id="btn-cancel-crop">Cancel</button>
       </div>
+    </div>
+
+    <!-- Convert Format config (Convert state) -->
+    <div id="config-section-convert" hidden>
+      <label class="config-label" for="input-src-format">Source Format</label>
+      <input
+        class="config-text"
+        type="text"
+        id="input-src-format"
+        value="webm"
+      />
+      <label class="config-label" for="input-dest-format">Dest Format</label>
+      <input
+        class="config-text"
+        type="text"
+        id="input-dest-format"
+        value="mp4"
+      />
+      <button class="action-btn execute" id="btn-execute-convert">
+        Execute Convert!
+      </button>
+      <button class="action-btn cancel" id="btn-cancel-convert">Cancel</button>
     </div>
 
     <!-- Status (shown whenever media is loaded) -->

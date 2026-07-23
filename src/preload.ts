@@ -26,4 +26,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     y: number,
   ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
     ipcRenderer.invoke("crop:run", filePath, w, h, x, y),
+  convertVideo: (
+    filePath: string,
+    srcFormat: string,
+    destFormat: string,
+  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
+    ipcRenderer.invoke("convert:run", filePath, srcFormat, destFormat),
 });
