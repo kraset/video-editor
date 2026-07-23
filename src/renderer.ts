@@ -81,6 +81,23 @@ const statusSection = document.getElementById(
   "status-section",
 ) as HTMLDivElement;
 const statusText = document.getElementById("status-text") as HTMLSpanElement;
+const btnCrop = document.getElementById("btn-crop") as HTMLButtonElement;
+const configSectionCrop = document.getElementById(
+  "config-section-crop",
+) as HTMLDivElement;
+const cropCoordDisplay = document.getElementById(
+  "crop-coord-display",
+) as HTMLDivElement;
+const btnResetArea = document.getElementById(
+  "btn-reset-area",
+) as HTMLButtonElement;
+const btnExecuteCrop = document.getElementById(
+  "btn-execute-crop",
+) as HTMLButtonElement;
+const btnCancelCrop = document.getElementById(
+  "btn-cancel-crop",
+) as HTMLButtonElement;
+const cropCanvas = document.getElementById("crop-canvas") as HTMLCanvasElement;
 
 // ── App State ─────────────────────────────────────────────────────────────────
 
@@ -89,6 +106,7 @@ const enum AppState {
   ReadyForAction,
   Trim,
   Downsample,
+  Crop,
 }
 
 let appState: AppState = AppState.WaitingForMediaSelection;
@@ -108,12 +126,15 @@ function setState(next: AppState): void {
   setHidden(actionsSection, next !== AppState.ReadyForAction);
   setHidden(configSection, next !== AppState.Trim);
   setHidden(configSectionDs, next !== AppState.Downsample);
+  setHidden(configSectionCrop, next !== AppState.Crop);
   setHidden(statusSection, !hasMedia);
   if (next === AppState.Trim) {
     rangeStart = null;
     rangeEnd = null;
     updateTrimLabels();
   }
+  if (next === AppState.Crop) enterCropState();
+  else exitCropState();
 }
 
 // ── File selection ────────────────────────────────────────────────────────────
@@ -268,4 +289,133 @@ btnExecuteDs.addEventListener("click", async () => {
   statusText.textContent = result.success
     ? `\u2713 Saved: ${result.outputPath}`
     : `\u2717 Error: ${result.error}`;
+});
+// ── Crop — Crop state ───────────────────────────────────────────────────────────────────
+
+btnCrop.addEventListener("click", () => setState(AppState.Crop));
+
+let cropStart: { x: number; y: number } | null = null;
+let cropEnd: { x: number; y: number } | null = null;
+
+function enterCropState(): void {
+  cropStart = null;
+  cropEnd = null;
+  // Size the canvas to exactly match the displayed video
+  const rect = video.getBoundingClientRect();
+  cropCanvas.width = rect.width;
+  cropCanvas.height = rect.height;
+  clearCropCanvas();
+  updateCropDisplay();
+  cropCanvas.classList.add("active");
+  cropCanvas.classList.remove("visible");
+  btnExecuteCrop.disabled = true;
+}
+
+function exitCropState(): void {
+  cropCanvas.classList.remove("active", "visible");
+  clearCropCanvas();
+  cropStart = null;
+  cropEnd = null;
+}
+
+function clearCropCanvas(): void {
+  const ctx = cropCanvas.getContext("2d")!;
+  ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+}
+
+function drawCropRect(): void {
+  if (!cropStart || !cropEnd) return;
+  const ctx = cropCanvas.getContext("2d")!;
+  ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+  const x = Math.min(cropStart.x, cropEnd.x);
+  const y = Math.min(cropStart.y, cropEnd.y);
+  const w = Math.abs(cropEnd.x - cropStart.x);
+  const h = Math.abs(cropEnd.y - cropStart.y);
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+  // Dim outside the crop area
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillRect(0, 0, cropCanvas.width, y); // top
+  ctx.fillRect(0, y + h, cropCanvas.width, cropCanvas.height - y - h); // bottom
+  ctx.fillRect(0, y, x, h); // left
+  ctx.fillRect(x + w, y, cropCanvas.width - x - w, h); // right
+}
+
+function updateCropDisplay(): void {
+  const rect = video.getBoundingClientRect();
+  const scaleX = rect.width > 0 ? video.videoWidth / rect.width : 1;
+  const scaleY = rect.height > 0 ? video.videoHeight / rect.height : 1;
+  const x1 = cropStart
+    ? Math.round(Math.min(cropStart.x, cropEnd?.x ?? cropStart.x) * scaleX)
+    : 0;
+  const y1 = cropStart
+    ? Math.round(Math.min(cropStart.y, cropEnd?.y ?? cropStart.y) * scaleY)
+    : 0;
+  const x2 = cropEnd
+    ? Math.round(Math.max(cropStart!.x, cropEnd.x) * scaleX)
+    : video.videoWidth;
+  const y2 = cropEnd
+    ? Math.round(Math.max(cropStart!.y, cropEnd.y) * scaleY)
+    : video.videoHeight;
+  cropCoordDisplay.textContent = `Define crop area: top-left (${x1}, ${y1}) → bottom-right (${x2}, ${y2})`;
+}
+
+cropCanvas.addEventListener("click", (e) => {
+  const rect = cropCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if (!cropStart) {
+    cropStart = { x, y };
+    updateCropDisplay();
+  } else if (!cropEnd) {
+    cropEnd = { x, y };
+    drawCropRect();
+    updateCropDisplay();
+    // Stop intercepting clicks so progress bar and play/pause still work
+    cropCanvas.classList.remove("active");
+    cropCanvas.classList.add("visible");
+    btnExecuteCrop.disabled = false;
+  }
+});
+
+btnResetArea.addEventListener("click", () => {
+  cropStart = null;
+  cropEnd = null;
+  clearCropCanvas();
+  updateCropDisplay();
+  cropCanvas.classList.add("active");
+  cropCanvas.classList.remove("visible");
+  btnExecuteCrop.disabled = true;
+});
+
+btnCancelCrop.addEventListener("click", () =>
+  setState(AppState.ReadyForAction),
+);
+
+btnExecuteCrop.addEventListener("click", async () => {
+  if (!currentVideoPath || !cropStart || !cropEnd) return;
+  const rect = video.getBoundingClientRect();
+  const scaleX = video.videoWidth / rect.width;
+  const scaleY = video.videoHeight / rect.height;
+  const x1 = Math.round(Math.min(cropStart.x, cropEnd.x) * scaleX);
+  const y1 = Math.round(Math.min(cropStart.y, cropEnd.y) * scaleY);
+  const x2 = Math.round(Math.max(cropStart.x, cropEnd.x) * scaleX);
+  const y2 = Math.round(Math.max(cropStart.y, cropEnd.y) * scaleY);
+  const cropW = x2 - x1;
+  const cropH = y2 - y1;
+  btnExecuteCrop.disabled = true;
+  statusText.textContent = "Cropping…";
+  const result = await window.electronAPI.cropVideo(
+    currentVideoPath,
+    cropW,
+    cropH,
+    x1,
+    y1,
+  );
+  btnExecuteCrop.disabled = false;
+  setState(AppState.ReadyForAction);
+  statusText.textContent = result.success
+    ? `✓ Saved: ${result.outputPath}`
+    : `✗ Error: ${result.error}`;
 });

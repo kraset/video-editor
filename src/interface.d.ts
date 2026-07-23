@@ -22,6 +22,17 @@ declare global {
         outputPath?: string;
         error?: string;
       }>;
+      cropVideo: (
+        filePath: string,
+        w: number,
+        h: number,
+        x: number,
+        y: number,
+      ) => Promise<{
+        success: boolean;
+        outputPath?: string;
+        error?: string;
+      }>;
     };
   }
 }

@@ -29,7 +29,10 @@
     <!-- Shown when a video is loaded -->
     <div id="player-wrapper" hidden>
       <div id="video-container">
-        <video id="video"></video>
+        <div id="video-wrapper">
+          <video id="video"></video>
+          <canvas id="crop-canvas"></canvas>
+        </div>
         <div id="controls">
           <button id="play-pause-btn" aria-label="Play">&#9654;</button>
           <input
@@ -48,7 +51,7 @@
     <div id="actions" hidden>
       <button class="action-btn" id="btn-trim">Trim</button>
       <button class="action-btn" id="btn-downsample">Downsample</button>
-      <button class="action-btn" id="btn-crop" disabled>Crop</button>
+      <button class="action-btn" id="btn-crop">Crop</button>
     </div>
 
     <!-- Trim config (Trim state) -->
@@ -82,6 +85,23 @@
       <button class="action-btn cancel" id="btn-cancel-downsample">
         Cancel
       </button>
+    </div>
+
+    <!-- Crop config (Crop state) -->
+    <div id="config-section-crop" hidden>
+      <div id="crop-coord-display">
+        Define crop area: top-left (0, 0) &rarr; bottom-right (0, 0)
+      </div>
+      <p class="crop-instruction">
+        Click top-left corner, then bottom-right corner on the video.
+      </p>
+      <div class="crop-buttons">
+        <button class="action-btn" id="btn-reset-area">Reset Area</button>
+        <button class="action-btn execute" id="btn-execute-crop" disabled>
+          Execute Crop!
+        </button>
+        <button class="action-btn cancel" id="btn-cancel-crop">Cancel</button>
+      </div>
     </div>
 
     <!-- Status (shown whenever media is loaded) -->

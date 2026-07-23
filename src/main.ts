@@ -130,3 +130,37 @@ ipcMain.handle(
     }
   },
 );
+
+ipcMain.handle(
+  "crop:run",
+  async (
+    _event,
+    filePath: string,
+    w: number,
+    h: number,
+    x: number,
+    y: number,
+  ) => {
+    const ext = path.extname(filePath);
+    const base = path.basename(filePath, ext);
+    const outputPath = path.join(process.cwd(), `${base}_cropped.mp4`);
+    const vf = `crop=${w}:${h}:${x}:${y}`;
+    const args = [
+      "-i",
+      filePath,
+      "-vf",
+      vf,
+      "-vcodec",
+      "libx264",
+      "-y",
+      outputPath,
+    ];
+
+    try {
+      await execFileAsync(FFMPEG, args);
+      return { success: true, outputPath };
+    } catch (err: unknown) {
+      return { success: false, error: String(err) };
+    }
+  },
+);

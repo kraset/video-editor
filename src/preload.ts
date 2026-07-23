@@ -18,4 +18,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     nthFrame: number,
   ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
     ipcRenderer.invoke("downsample:run", filePath, nthFrame),
+  cropVideo: (
+    filePath: string,
+    w: number,
+    h: number,
+    x: number,
+    y: number,
+  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
+    ipcRenderer.invoke("crop:run", filePath, w, h, x, y),
 });

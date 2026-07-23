@@ -224,6 +224,7 @@ body {
 
 #config-section[hidden],
 #config-section-downsample[hidden],
+#config-section-crop[hidden],
 #actions[hidden],
 #status-section[hidden],
 #player-wrapper[hidden] {
@@ -296,4 +297,56 @@ body {
   font-size: 0.85rem;
   color: #888;
   min-height: 1.2em;
+}
+
+/* ── Video wrapper & crop canvas ─────────────────────────────────────────────────── */
+
+#video-wrapper {
+  position: relative;
+  line-height: 0; /* collapse whitespace below video */
+}
+
+#crop-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  pointer-events: none;
+}
+
+#crop-canvas.active {
+  display: block;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+#crop-canvas.visible {
+  display: block;
+  pointer-events: none;
+}
+
+/* ── Crop config section ───────────────────────────────────────────────────────────── */
+
+#config-section-crop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#crop-coord-display {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.85rem;
+  color: #4a9eff;
+}
+
+.crop-instruction {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.crop-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
