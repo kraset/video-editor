@@ -274,6 +274,7 @@ body {
 #config-section-compress[hidden],
 #config-section-crop[hidden],
 #config-section-audio-map[hidden],
+#config-section-multiconcat[hidden],
 #actions[hidden],
 #run-controls[hidden],
 #status-section[hidden],
@@ -292,6 +293,37 @@ body {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* ── Multi-Interval-Concat config ────────────────────────────────────────────── */
+
+#config-section-multiconcat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+#config-section-multiconcat .mc-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#mc-ranges-display {
+  width: 100%;
+  max-width: 700px;
+  padding: 10px 12px;
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #4a9eff;
+  word-break: break-word;
 }
 
 .action-check {

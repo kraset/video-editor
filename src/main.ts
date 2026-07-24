@@ -126,6 +126,7 @@ interface RunOptions {
   audio: "none" | "remove" | "map";
   audioFile?: string;
   convert: boolean;
+  multiConcat?: { ranges: { start: number; end: number }[] };
 }
 
 function twoDigits(n: number): string {
@@ -150,6 +151,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
     audio,
     audioFile,
     convert,
+    multiConcat,
   } = opts;
 
   const FFMPEG = getFfmpegPath();
@@ -159,6 +161,43 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
   const dir = path.dirname(filePath);
   const outExt = convert ? "mp4" : srcExt.replace(/^\./, "") || "mp4";
   const outputPath = path.join(dir, `${base}_${timestamp()}.${outExt}`);
+
+  // Multi-Interval-Concat is a standalone mode: trim several ranges and
+  // concatenate them into a single output via one filter_complex graph.
+  if (multiConcat && multiConcat.ranges.length > 0) {
+    const ranges = multiConcat.ranges;
+    const segments: string[] = [];
+    const concatInputs: string[] = [];
+    ranges.forEach((r, i) => {
+      segments.push(
+        `[0:v]trim=start=${r.start}:end=${r.end},setpts=PTS-STARTPTS[v${i}]`,
+        `[0:a]atrim=start=${r.start}:end=${r.end},asetpts=PTS-STARTPTS[a${i}]`,
+      );
+      concatInputs.push(`[v${i}][a${i}]`);
+    });
+    const filter = `${segments.join(";")};${concatInputs.join(
+      "",
+    )}concat=n=${ranges.length}:v=1:a=1[v][a]`;
+    const mcArgs = [
+      "-i",
+      filePath,
+      "-filter_complex",
+      filter,
+      "-map",
+      "[v]",
+      "-map",
+      "[a]",
+      "-y",
+      outputPath,
+    ];
+    const mcCommand = `${FFMPEG} ${mcArgs.join(" ")}`;
+    try {
+      await execFileAsync(FFMPEG, mcArgs);
+      return { success: true, outputPath, command: mcCommand };
+    } catch (err: unknown) {
+      return { success: false, error: String(err), command: mcCommand };
+    }
+  }
 
   const args: string[] = [];
 

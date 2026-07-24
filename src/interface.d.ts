@@ -10,6 +10,7 @@ interface RunOptions {
   audio: "none" | "remove" | "map";
   audioFile?: string;
   convert: boolean;
+  multiConcat?: { ranges: { start: number; end: number }[] };
 }
 
 interface RunResult {

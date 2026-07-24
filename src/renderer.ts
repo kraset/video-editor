@@ -99,6 +99,9 @@ const chkAudioMap = document.getElementById(
   "chk-audio-map",
 ) as HTMLInputElement;
 const chkConvert = document.getElementById("chk-convert") as HTMLInputElement;
+const chkMultiConcat = document.getElementById(
+  "chk-multiconcat",
+) as HTMLInputElement;
 
 // Trim config
 const configSection = document.getElementById(
@@ -156,6 +159,30 @@ const audioFileLabel = document.getElementById(
   "audio-file-label",
 ) as HTMLSpanElement;
 
+// Multi-Interval-Concat config
+const configSectionMc = document.getElementById(
+  "config-section-multiconcat",
+) as HTMLDivElement;
+const btnMcSetStart = document.getElementById(
+  "btn-mc-set-start",
+) as HTMLButtonElement;
+const btnMcSetEnd = document.getElementById(
+  "btn-mc-set-end",
+) as HTMLButtonElement;
+const labelMcStart = document.getElementById(
+  "label-mc-start",
+) as HTMLSpanElement;
+const labelMcEnd = document.getElementById("label-mc-end") as HTMLSpanElement;
+const btnMcAddRange = document.getElementById(
+  "btn-mc-add-range",
+) as HTMLButtonElement;
+const btnMcClearRanges = document.getElementById(
+  "btn-mc-clear-ranges",
+) as HTMLButtonElement;
+const mcRangesDisplay = document.getElementById(
+  "mc-ranges-display",
+) as HTMLDivElement;
+
 // Run controls
 const runControls = document.getElementById("run-controls") as HTMLDivElement;
 const btnClearAll = document.getElementById(
@@ -191,6 +218,11 @@ let cropEnd: { x: number; y: number } | null = null;
 // Replace-audio param
 let audioFilePath: string | null = null;
 
+// Multi-Interval-Concat params
+let mcStart: number | null = null;
+let mcEnd: number | null = null;
+let mcRanges: { start: number; end: number }[] = [];
+
 function setHidden(el: HTMLElement, hidden: boolean): void {
   if (hidden) el.setAttribute("hidden", "");
   else el.removeAttribute("hidden");
@@ -212,8 +244,13 @@ function validateActionInfo(): boolean {
     chkCompress.checked ||
     chkAudioRemove.checked ||
     chkAudioMap.checked ||
-    chkConvert.checked;
+    chkConvert.checked ||
+    chkMultiConcat.checked;
   if (!anyChecked) return false;
+
+  // Multi-Interval-Concat is mutually exclusive with everything else and only
+  // needs at least one selected range.
+  if (chkMultiConcat.checked) return mcRanges.length >= 1;
 
   if (
     chkTrim.checked &&
@@ -238,6 +275,51 @@ function updateConfigVisibility(): void {
   setHidden(configSectionDownscale, !chkDownscale.checked);
   setHidden(configSectionCompress, !chkCompress.checked);
   setHidden(configSectionAudioMap, !chkAudioMap.checked);
+  setHidden(configSectionMc, !chkMultiConcat.checked);
+}
+
+/** Convert is only offered for non-mp4 sources. */
+function isConvertApplicable(): boolean {
+  return !!currentVideoPath && !/\.mp4$/i.test(currentVideoPath);
+}
+
+/** Enforce mutual exclusivity: Multi-Interval-Concat and every other action
+ *  hide one another so only one “mode” can be active at a time. */
+function updateActionAvailability(): void {
+  const multiChecked = chkMultiConcat.checked;
+  const anyOther =
+    chkTrim.checked ||
+    chkCrop.checked ||
+    chkDownsample.checked ||
+    chkDownscale.checked ||
+    chkCompress.checked ||
+    chkAudioRemove.checked ||
+    chkAudioMap.checked ||
+    chkConvert.checked;
+
+  for (const chk of [
+    chkTrim,
+    chkCrop,
+    chkDownsample,
+    chkDownscale,
+    chkCompress,
+    chkAudioRemove,
+    chkAudioMap,
+    chkConvert,
+  ]) {
+    const label = chk.closest(".action-check") as HTMLElement | null;
+    if (!label) continue;
+    if (chk === chkConvert) {
+      setHidden(label, multiChecked || !isConvertApplicable());
+    } else {
+      setHidden(label, multiChecked);
+    }
+  }
+
+  const multiLabel = chkMultiConcat.closest(
+    ".action-check",
+  ) as HTMLElement | null;
+  if (multiLabel) setHidden(multiLabel, anyOther);
 }
 
 function refreshUI(): void {
@@ -248,6 +330,7 @@ function refreshUI(): void {
   setHidden(statusSection, !hasMedia);
 
   updateConfigVisibility();
+  updateActionAvailability();
 
   if (!hasMedia) {
     appState = AppState.WaitingForMediaSelection;
@@ -386,6 +469,7 @@ for (const chk of [
   chkDownscale,
   chkCompress,
   chkConvert,
+  chkMultiConcat,
 ]) {
   chk.addEventListener("change", onCheckboxChange);
 }
@@ -422,6 +506,47 @@ btnSetStart.addEventListener("click", () => {
 btnSetEnd.addEventListener("click", () => {
   rangeEnd = video.currentTime;
   updateTrimLabels();
+  refreshUI();
+});
+
+// ── Multi-Interval-Concat config — works like Trim, but collects many ranges ──
+
+function updateMcLabels(): void {
+  labelMcStart.textContent =
+    mcStart !== null ? formatTime(mcStart) : "--:--:--";
+  labelMcEnd.textContent = mcEnd !== null ? formatTime(mcEnd) : "--:--:--";
+}
+
+function updateMcRangesDisplay(): void {
+  const parts = mcRanges.map(
+    (r) => `{${formatTime(r.start)}, ${formatTime(r.end)}}`,
+  );
+  mcRangesDisplay.textContent = `Selected ranges: [${parts.join(", ")}]`;
+}
+
+btnMcSetStart.addEventListener("click", () => {
+  mcStart = video.currentTime;
+  updateMcLabels();
+});
+btnMcSetEnd.addEventListener("click", () => {
+  mcEnd = video.currentTime;
+  updateMcLabels();
+});
+btnMcAddRange.addEventListener("click", () => {
+  if (mcStart === null || mcEnd === null || mcEnd <= mcStart) return;
+  mcRanges.push({ start: mcStart, end: mcEnd });
+  mcStart = null;
+  mcEnd = null;
+  updateMcLabels();
+  updateMcRangesDisplay();
+  refreshUI();
+});
+btnMcClearRanges.addEventListener("click", () => {
+  mcRanges = [];
+  mcStart = null;
+  mcEnd = null;
+  updateMcLabels();
+  updateMcRangesDisplay();
   refreshUI();
 });
 
@@ -580,6 +705,12 @@ function clearAllActions(): void {
   exitCropMode();
   audioFilePath = null;
   audioFileLabel.textContent = "No file selected";
+  chkMultiConcat.checked = false;
+  mcStart = null;
+  mcEnd = null;
+  mcRanges = [];
+  updateMcLabels();
+  updateMcRangesDisplay();
 }
 
 btnClearAll.addEventListener("click", () => {
@@ -613,6 +744,10 @@ btnExecute.addEventListener("click", async () => {
         : ("none" as const),
     audioFile: chkAudioMap.checked ? (audioFilePath ?? undefined) : undefined,
     convert: chkConvert.checked,
+    multiConcat:
+      chkMultiConcat.checked && mcRanges.length > 0
+        ? { ranges: mcRanges.map((r) => ({ start: r.start, end: r.end })) }
+        : undefined,
   };
 
   btnExecute.disabled = true;

@@ -84,6 +84,9 @@
       <label class="action-check">
         <input type="checkbox" id="chk-convert" /> Convert to MP4
       </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-multiconcat" /> Multi-Interval-Concat
+      </label>
     </div>
 
     <!-- Trim config -->
@@ -155,6 +158,21 @@
     <div id="config-section-audio-map" hidden>
       <button class="action-btn" id="btn-pick-audio">Choose Audio File…</button>
       <span class="time-label" id="audio-file-label">No file selected</span>
+    </div>
+
+    <!-- Multi-Interval-Concat config -->
+    <div id="config-section-multiconcat" hidden>
+      <div class="mc-buttons">
+        <button class="action-btn" id="btn-mc-set-start">Set Start</button>
+        <span class="time-label" id="label-mc-start">--:--:--</span>
+        <button class="action-btn" id="btn-mc-set-end">Set End</button>
+        <span class="time-label" id="label-mc-end">--:--:--</span>
+        <button class="action-btn" id="btn-mc-add-range">Add Range</button>
+        <button class="action-btn cancel" id="btn-mc-clear-ranges">
+          Clear Ranges
+        </button>
+      </div>
+      <div id="mc-ranges-display">Selected ranges: []</div>
     </div>
 
     <!-- Run controls -->
