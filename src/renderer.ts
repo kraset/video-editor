@@ -45,11 +45,28 @@ const playPauseBtn = document.getElementById(
   "play-pause-btn",
 ) as HTMLButtonElement;
 const progress = document.getElementById("progress") as HTMLInputElement;
+
 const actionsSection = document.getElementById("actions") as HTMLDivElement;
-const btnTrim = document.getElementById("btn-trim") as HTMLButtonElement;
-const btnDownsample = document.getElementById(
-  "btn-downsample",
-) as HTMLButtonElement;
+
+// Action checkboxes
+const chkTrim = document.getElementById("chk-trim") as HTMLInputElement;
+const chkCrop = document.getElementById("chk-crop") as HTMLInputElement;
+const chkDownsample = document.getElementById(
+  "chk-downsample",
+) as HTMLInputElement;
+const chkDownscale = document.getElementById(
+  "chk-downscale",
+) as HTMLInputElement;
+const chkCompress = document.getElementById("chk-compress") as HTMLInputElement;
+const chkAudioRemove = document.getElementById(
+  "chk-audio-remove",
+) as HTMLInputElement;
+const chkAudioMap = document.getElementById(
+  "chk-audio-map",
+) as HTMLInputElement;
+const chkConvert = document.getElementById("chk-convert") as HTMLInputElement;
+
+// Trim config
 const configSection = document.getElementById(
   "config-section",
 ) as HTMLDivElement;
@@ -57,31 +74,10 @@ const btnSetStart = document.getElementById(
   "btn-set-start",
 ) as HTMLButtonElement;
 const btnSetEnd = document.getElementById("btn-set-end") as HTMLButtonElement;
-const btnExecuteTrim = document.getElementById(
-  "btn-execute-trim",
-) as HTMLButtonElement;
-const btnCancelTrim = document.getElementById(
-  "btn-cancel-trim",
-) as HTMLButtonElement;
 const labelStart = document.getElementById("label-start") as HTMLSpanElement;
 const labelEnd = document.getElementById("label-end") as HTMLSpanElement;
-const configSectionDs = document.getElementById(
-  "config-section-downsample",
-) as HTMLDivElement;
-const inputNthFrame = document.getElementById(
-  "input-nth-frame",
-) as HTMLInputElement;
-const btnExecuteDs = document.getElementById(
-  "btn-execute-downsample",
-) as HTMLButtonElement;
-const btnCancelDs = document.getElementById(
-  "btn-cancel-downsample",
-) as HTMLButtonElement;
-const statusSection = document.getElementById(
-  "status-section",
-) as HTMLDivElement;
-const statusText = document.getElementById("status-text") as HTMLSpanElement;
-const btnCrop = document.getElementById("btn-crop") as HTMLButtonElement;
+
+// Crop config
 const configSectionCrop = document.getElementById(
   "config-section-crop",
 ) as HTMLDivElement;
@@ -91,82 +87,171 @@ const cropCoordDisplay = document.getElementById(
 const btnResetArea = document.getElementById(
   "btn-reset-area",
 ) as HTMLButtonElement;
-const btnExecuteCrop = document.getElementById(
-  "btn-execute-crop",
-) as HTMLButtonElement;
-const btnCancelCrop = document.getElementById(
-  "btn-cancel-crop",
-) as HTMLButtonElement;
 const cropCanvas = document.getElementById("crop-canvas") as HTMLCanvasElement;
-const btnConvert = document.getElementById("btn-convert") as HTMLButtonElement;
-const configSectionConvert = document.getElementById(
-  "config-section-convert",
+
+// Downsample config
+const configSectionDs = document.getElementById(
+  "config-section-downsample",
 ) as HTMLDivElement;
-const inputSrcFormat = document.getElementById(
-  "input-src-format",
+const inputNthFrame = document.getElementById(
+  "input-nth-frame",
 ) as HTMLInputElement;
-const inputDestFormat = document.getElementById(
-  "input-dest-format",
+
+// Downscale config
+const configSectionDownscale = document.getElementById(
+  "config-section-downscale",
+) as HTMLDivElement;
+const inputScaleWidth = document.getElementById(
+  "input-scale-width",
 ) as HTMLInputElement;
-const btnExecuteConvert = document.getElementById(
-  "btn-execute-convert",
+
+// Compress config
+const configSectionCompress = document.getElementById(
+  "config-section-compress",
+) as HTMLDivElement;
+const inputCrf = document.getElementById("input-crf") as HTMLInputElement;
+
+// Replace-audio config
+const configSectionAudioMap = document.getElementById(
+  "config-section-audio-map",
+) as HTMLDivElement;
+const btnPickAudio = document.getElementById(
+  "btn-pick-audio",
 ) as HTMLButtonElement;
-const btnCancelConvert = document.getElementById(
-  "btn-cancel-convert",
+const audioFileLabel = document.getElementById(
+  "audio-file-label",
+) as HTMLSpanElement;
+
+// Run controls
+const runControls = document.getElementById("run-controls") as HTMLDivElement;
+const btnClearAll = document.getElementById(
+  "btn-clear-all",
 ) as HTMLButtonElement;
+const btnExecute = document.getElementById("btn-execute") as HTMLButtonElement;
+
+// Status
+const statusSection = document.getElementById(
+  "status-section",
+) as HTMLDivElement;
+const statusText = document.getElementById("status-text") as HTMLSpanElement;
 
 // ── App State ─────────────────────────────────────────────────────────────────
 
 const enum AppState {
   WaitingForMediaSelection,
+  WaitingForConfig,
   ReadyForAction,
-  Trim,
-  Downsample,
-  Crop,
-  Convert,
 }
 
 let appState: AppState = AppState.WaitingForMediaSelection;
 let currentVideoPath: string | null = null;
+
+// Trim params
 let rangeStart: number | null = null;
 let rangeEnd: number | null = null;
+
+// Crop params (display-space coordinates)
+let cropStart: { x: number; y: number } | null = null;
+let cropEnd: { x: number; y: number } | null = null;
+
+// Replace-audio param
+let audioFilePath: string | null = null;
 
 function setHidden(el: HTMLElement, hidden: boolean): void {
   if (hidden) el.setAttribute("hidden", "");
   else el.removeAttribute("hidden");
 }
 
-function setState(next: AppState): void {
-  appState = next;
-  const hasMedia = next !== AppState.WaitingForMediaSelection;
+function validNumber(value: string, min: number): boolean {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min;
+}
+
+/** True when at least one action is checked AND every checked action has all
+ *  the parameters it requires. */
+function validateActionInfo(): boolean {
+  const anyChecked =
+    chkTrim.checked ||
+    chkCrop.checked ||
+    chkDownsample.checked ||
+    chkDownscale.checked ||
+    chkCompress.checked ||
+    chkAudioRemove.checked ||
+    chkAudioMap.checked ||
+    chkConvert.checked;
+  if (!anyChecked) return false;
+
+  if (
+    chkTrim.checked &&
+    (rangeStart === null || rangeEnd === null || rangeEnd <= rangeStart)
+  )
+    return false;
+  if (chkCrop.checked && (!cropStart || !cropEnd)) return false;
+  if (chkDownsample.checked && !validNumber(inputNthFrame.value, 1))
+    return false;
+  if (chkDownscale.checked && !validNumber(inputScaleWidth.value, 1))
+    return false;
+  if (chkCompress.checked && !validNumber(inputCrf.value, 0)) return false;
+  if (chkAudioMap.checked && !audioFilePath) return false;
+  return true;
+}
+
+/** Show/hide each config section based on its checkbox. */
+function updateConfigVisibility(): void {
+  setHidden(configSection, !chkTrim.checked);
+  setHidden(configSectionCrop, !chkCrop.checked);
+  setHidden(configSectionDs, !chkDownsample.checked);
+  setHidden(configSectionDownscale, !chkDownscale.checked);
+  setHidden(configSectionCompress, !chkCompress.checked);
+  setHidden(configSectionAudioMap, !chkAudioMap.checked);
+}
+
+function refreshUI(): void {
+  const hasMedia = currentVideoPath !== null;
   setHidden(playerWrapper, !hasMedia);
-  setHidden(actionsSection, next !== AppState.ReadyForAction);
-  setHidden(configSection, next !== AppState.Trim);
-  setHidden(configSectionDs, next !== AppState.Downsample);
-  setHidden(configSectionCrop, next !== AppState.Crop);
-  setHidden(configSectionConvert, next !== AppState.Convert);
+  setHidden(actionsSection, !hasMedia);
+  setHidden(runControls, !hasMedia);
   setHidden(statusSection, !hasMedia);
-  if (next === AppState.Trim) {
-    rangeStart = null;
-    rangeEnd = null;
-    updateTrimLabels();
+
+  updateConfigVisibility();
+
+  if (!hasMedia) {
+    appState = AppState.WaitingForMediaSelection;
+  } else if (validateActionInfo()) {
+    appState = AppState.ReadyForAction;
+  } else {
+    appState = AppState.WaitingForConfig;
   }
-  if (next === AppState.Crop) enterCropState();
-  else exitCropState();
+  btnExecute.disabled = appState !== AppState.ReadyForAction;
 }
 
 // ── File selection ────────────────────────────────────────────────────────────
 
+function afterVideoLoaded(): void {
+  clearAllActions();
+  // Convert only supports webm → mp4. Hide the checkbox entirely for files
+  // that are already mp4, and default it on for webm.
+  const isMp4 = !!currentVideoPath && /\.mp4$/i.test(currentVideoPath);
+  const convertLabel = chkConvert.closest(
+    ".action-check",
+  ) as HTMLElement | null;
+  if (convertLabel) setHidden(convertLabel, isMp4);
+  if (currentVideoPath && /\.webm$/i.test(currentVideoPath)) {
+    chkConvert.checked = true;
+  }
+  refreshUI();
+}
+
 function loadVideo(file: File): void {
   currentVideoPath = window.electronAPI.getFilePath(file);
   video.src = URL.createObjectURL(file);
-  setState(AppState.ReadyForAction);
+  afterVideoLoaded();
 }
 
 function loadVideoFromPath(filePath: string): void {
   currentVideoPath = filePath;
   video.src = `file:///${filePath.replace(/\\/g, "/")}`;
-  setState(AppState.ReadyForAction);
+  afterVideoLoaded();
 }
 
 pickFileBtn.addEventListener("click", async () => {
@@ -245,8 +330,40 @@ function updateProgressFill(): void {
 
 // ── Actions — ReadyForAction state ────────────────────────────────────────────
 
-btnTrim.addEventListener("click", () => setState(AppState.Trim));
-btnDownsample.addEventListener("click", () => setState(AppState.Downsample));
+// Audio remove / replace are mutually exclusive.
+chkAudioRemove.addEventListener("change", () => {
+  if (chkAudioRemove.checked) chkAudioMap.checked = false;
+  onCheckboxChange();
+});
+chkAudioMap.addEventListener("change", () => {
+  if (chkAudioMap.checked) chkAudioRemove.checked = false;
+  onCheckboxChange();
+});
+
+chkCrop.addEventListener("change", () => {
+  if (chkCrop.checked) enterCropMode();
+  else exitCropMode();
+  onCheckboxChange();
+});
+
+for (const chk of [
+  chkTrim,
+  chkDownsample,
+  chkDownscale,
+  chkCompress,
+  chkConvert,
+]) {
+  chk.addEventListener("change", onCheckboxChange);
+}
+
+// Re-validate whenever a numeric config changes.
+for (const input of [inputNthFrame, inputScaleWidth, inputCrf]) {
+  input.addEventListener("input", refreshUI);
+}
+
+function onCheckboxChange(): void {
+  refreshUI();
+}
 
 // ── Trim config — Trim state ──────────────────────────────────────────────────
 
@@ -261,61 +378,22 @@ function updateTrimLabels(): void {
   labelStart.textContent =
     rangeStart !== null ? formatTime(rangeStart) : "--:--:--";
   labelEnd.textContent = rangeEnd !== null ? formatTime(rangeEnd) : "--:--:--";
-  setHidden(btnExecuteTrim, rangeStart === null || rangeEnd === null);
 }
 
 btnSetStart.addEventListener("click", () => {
   rangeStart = video.currentTime;
   updateTrimLabels();
+  refreshUI();
 });
 btnSetEnd.addEventListener("click", () => {
   rangeEnd = video.currentTime;
   updateTrimLabels();
-});
-btnCancelTrim.addEventListener("click", () =>
-  setState(AppState.ReadyForAction),
-);
-
-btnExecuteTrim.addEventListener("click", async () => {
-  if (!currentVideoPath || rangeStart === null || rangeEnd === null) return;
-  btnExecuteTrim.disabled = true;
-  statusText.textContent = "Trimming\u2026";
-  const result = await window.electronAPI.trimVideo(
-    currentVideoPath,
-    formatTime(rangeStart),
-    formatTime(rangeEnd),
-  );
-  btnExecuteTrim.disabled = false;
-  setState(AppState.ReadyForAction);
-  statusText.textContent = result.success
-    ? `\u2713 Saved: ${result.outputPath}`
-    : `\u2717 Error: ${result.error}`;
+  refreshUI();
 });
 
-// ── Downsample config — Downsample state ──────────────────────────────────────
-
-btnCancelDs.addEventListener("click", () => setState(AppState.ReadyForAction));
-
-btnExecuteDs.addEventListener("click", async () => {
-  if (!currentVideoPath) return;
-  const n = Math.max(1, Math.min(10, Number(inputNthFrame.value) || 2));
-  btnExecuteDs.disabled = true;
-  statusText.textContent = "Downsampling\u2026";
-  const result = await window.electronAPI.downsampleVideo(currentVideoPath, n);
-  btnExecuteDs.disabled = false;
-  setState(AppState.ReadyForAction);
-  statusText.textContent = result.success
-    ? `\u2713 Saved: ${result.outputPath}`
-    : `\u2717 Error: ${result.error}`;
-});
 // ── Crop — Crop state ───────────────────────────────────────────────────────────────────
 
-btnCrop.addEventListener("click", () => setState(AppState.Crop));
-
-let cropStart: { x: number; y: number } | null = null;
-let cropEnd: { x: number; y: number } | null = null;
-
-function enterCropState(): void {
+function enterCropMode(): void {
   cropStart = null;
   cropEnd = null;
   // Size the canvas to exactly match the displayed video
@@ -326,10 +404,9 @@ function enterCropState(): void {
   updateCropDisplay();
   cropCanvas.classList.add("active");
   cropCanvas.classList.remove("visible");
-  btnExecuteCrop.disabled = true;
 }
 
-function exitCropState(): void {
+function exitCropMode(): void {
   cropCanvas.classList.remove("active", "visible");
   clearCropCanvas();
   cropStart = null;
@@ -410,7 +487,7 @@ cropCanvas.addEventListener("click", (e) => {
     // Stop intercepting clicks so progress bar and play/pause still work
     cropCanvas.classList.remove("active");
     cropCanvas.classList.add("visible");
-    btnExecuteCrop.disabled = false;
+    refreshUI();
   }
 });
 
@@ -421,15 +498,12 @@ btnResetArea.addEventListener("click", () => {
   updateCropDisplay();
   cropCanvas.classList.add("active");
   cropCanvas.classList.remove("visible");
-  btnExecuteCrop.disabled = true;
+  refreshUI();
 });
 
-btnCancelCrop.addEventListener("click", () =>
-  setState(AppState.ReadyForAction),
-);
-
-btnExecuteCrop.addEventListener("click", async () => {
-  if (!currentVideoPath || !cropStart || !cropEnd) return;
+/** Convert display-space crop rectangle to actual video pixels. */
+function computeCrop(): { w: number; h: number; x: number; y: number } | null {
+  if (!cropStart || !cropEnd) return null;
   const rect = video.getBoundingClientRect();
   const scaleX = video.videoWidth / rect.width;
   const scaleY = video.videoHeight / rect.height;
@@ -437,46 +511,81 @@ btnExecuteCrop.addEventListener("click", async () => {
   const y1 = Math.round(Math.min(cropStart.y, cropEnd.y) * scaleY);
   const x2 = Math.round(Math.max(cropStart.x, cropEnd.x) * scaleX);
   const y2 = Math.round(Math.max(cropStart.y, cropEnd.y) * scaleY);
-  const cropW = x2 - x1;
-  const cropH = y2 - y1;
-  btnExecuteCrop.disabled = true;
-  statusText.textContent = "Cropping…";
-  const result = await window.electronAPI.cropVideo(
-    currentVideoPath,
-    cropW,
-    cropH,
-    x1,
-    y1,
-  );
-  btnExecuteCrop.disabled = false;
-  setState(AppState.ReadyForAction);
-  statusText.textContent = result.success
-    ? `✓ Saved: ${result.outputPath}`
-    : `✗ Error: ${result.error}`;
+  return { w: x2 - x1, h: y2 - y1, x: x1, y: y1 };
+}
+
+// ── Replace-audio config ──────────────────────────────────────────────────────
+
+btnPickAudio.addEventListener("click", async () => {
+  const filePath = await window.electronAPI.pickAudio();
+  if (filePath) {
+    audioFilePath = filePath;
+    audioFileLabel.textContent = filePath.split(/[\\/]/).pop() ?? filePath;
+  }
+  refreshUI();
 });
 
-// ── Convert Format ──────────────────────────────────────────────────────────────────
+// ── Clear all & execute ───────────────────────────────────────────────────────
 
-btnConvert.addEventListener("click", () => setState(AppState.Convert));
+function clearAllActions(): void {
+  for (const chk of [
+    chkTrim,
+    chkCrop,
+    chkDownsample,
+    chkDownscale,
+    chkCompress,
+    chkAudioRemove,
+    chkAudioMap,
+    chkConvert,
+  ]) {
+    chk.checked = false;
+  }
+  rangeStart = null;
+  rangeEnd = null;
+  updateTrimLabels();
+  exitCropMode();
+  audioFilePath = null;
+  audioFileLabel.textContent = "No file selected";
+}
 
-btnCancelConvert.addEventListener("click", () =>
-  setState(AppState.ReadyForAction),
-);
+btnClearAll.addEventListener("click", () => {
+  clearAllActions();
+  refreshUI();
+});
 
-btnExecuteConvert.addEventListener("click", async () => {
-  if (!currentVideoPath) return;
-  const srcFmt = inputSrcFormat.value.trim().replace(/^\./, "");
-  const destFmt = inputDestFormat.value.trim().replace(/^\./, "");
-  btnExecuteConvert.disabled = true;
-  statusText.textContent = "Converting…";
-  const result = await window.electronAPI.convertVideo(
-    currentVideoPath,
-    srcFmt,
-    destFmt,
-  );
-  btnExecuteConvert.disabled = false;
-  setState(AppState.ReadyForAction);
+btnExecute.addEventListener("click", async () => {
+  if (!currentVideoPath || appState !== AppState.ReadyForAction) return;
+
+  const options = {
+    filePath: currentVideoPath,
+    trim:
+      chkTrim.checked && rangeStart !== null && rangeEnd !== null
+        ? { start: formatTime(rangeStart), end: formatTime(rangeEnd) }
+        : undefined,
+    crop: chkCrop.checked ? (computeCrop() ?? undefined) : undefined,
+    downsample: chkDownsample.checked
+      ? { nth: Math.max(1, Math.floor(Number(inputNthFrame.value))) }
+      : undefined,
+    downscale: chkDownscale.checked
+      ? { width: Math.max(1, Math.floor(Number(inputScaleWidth.value))) }
+      : undefined,
+    compress: chkCompress.checked
+      ? { crf: Math.max(0, Math.floor(Number(inputCrf.value))) }
+      : undefined,
+    audio: chkAudioRemove.checked
+      ? ("remove" as const)
+      : chkAudioMap.checked
+        ? ("map" as const)
+        : ("none" as const),
+    audioFile: chkAudioMap.checked ? (audioFilePath ?? undefined) : undefined,
+    convert: chkConvert.checked,
+  };
+
+  btnExecute.disabled = true;
+  statusText.textContent = "Processing…";
+  const result = await window.electronAPI.runActions(options);
   statusText.textContent = result.success
     ? `✓ Saved: ${result.outputPath}`
     : `✗ Error: ${result.error}`;
+  refreshUI();
 });

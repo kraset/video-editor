@@ -6,30 +6,11 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 contextBridge.exposeInMainWorld("electronAPI", {
   openVideo: (): Promise<string | null> =>
     ipcRenderer.invoke("dialog:open-video"),
+  pickAudio: (): Promise<string | null> =>
+    ipcRenderer.invoke("dialog:open-audio"),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
-  trimVideo: (
-    filePath: string,
-    startTime: string,
-    endTime: string,
+  runActions: (
+    options: unknown,
   ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
-    ipcRenderer.invoke("trim:run", filePath, startTime, endTime),
-  downsampleVideo: (
-    filePath: string,
-    nthFrame: number,
-  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
-    ipcRenderer.invoke("downsample:run", filePath, nthFrame),
-  cropVideo: (
-    filePath: string,
-    w: number,
-    h: number,
-    x: number,
-    y: number,
-  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
-    ipcRenderer.invoke("crop:run", filePath, w, h, x, y),
-  convertVideo: (
-    filePath: string,
-    srcFormat: string,
-    destFormat: string,
-  ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
-    ipcRenderer.invoke("convert:run", filePath, srcFormat, destFormat),
+    ipcRenderer.invoke("process:run", options),
 });

@@ -47,27 +47,56 @@
       </div>
     </div>
 
-    <!-- Action buttons (ReadyForAction state) -->
+    <!-- Action checkboxes (shown when a video is loaded) -->
     <div id="actions" hidden>
-      <button class="action-btn" id="btn-trim">Trim</button>
-      <button class="action-btn" id="btn-downsample">Downsample</button>
-      <button class="action-btn" id="btn-crop">Crop</button>
-      <button class="action-btn" id="btn-convert">Convert Format</button>
+      <label class="action-check">
+        <input type="checkbox" id="chk-trim" /> Trim
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-crop" /> Crop
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-downsample" /> Downsample
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-downscale" /> Downscale
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-compress" /> Compress
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-audio-remove" /> Remove Audio
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-audio-map" /> Replace Audio
+      </label>
+      <label class="action-check">
+        <input type="checkbox" id="chk-convert" /> Convert to MP4
+      </label>
     </div>
 
-    <!-- Trim config (Trim state) -->
+    <!-- Trim config -->
     <div id="config-section" hidden>
       <button class="action-btn" id="btn-set-start">Set Start</button>
       <span class="time-label" id="label-start">--:--:--</span>
       <button class="action-btn" id="btn-set-end">Set End</button>
       <span class="time-label" id="label-end">--:--:--</span>
-      <button class="action-btn execute" id="btn-execute-trim" hidden>
-        Execute Trim!
-      </button>
-      <button class="action-btn cancel" id="btn-cancel-trim">Cancel</button>
     </div>
 
-    <!-- Downsample config (Downsample state) -->
+    <!-- Crop config -->
+    <div id="config-section-crop" hidden>
+      <div id="crop-coord-display">
+        Define crop area: top-left (0, 0) &rarr; bottom-right (0, 0)
+      </div>
+      <p class="crop-instruction">
+        Click top-left corner, then bottom-right corner on the video.
+      </p>
+      <div class="crop-buttons">
+        <button class="action-btn" id="btn-reset-area">Reset Area</button>
+      </div>
+    </div>
+
+    <!-- Downsample config -->
     <div id="config-section-downsample" hidden>
       <label class="config-label" for="input-nth-frame"
         >Take Every Nth frame</label
@@ -78,53 +107,51 @@
         id="input-nth-frame"
         value="2"
         min="1"
-        max="10"
+        max="60"
       />
-      <button class="action-btn execute" id="btn-execute-downsample">
-        Execute Downsample!
-      </button>
-      <button class="action-btn cancel" id="btn-cancel-downsample">
-        Cancel
-      </button>
     </div>
 
-    <!-- Crop config (Crop state) -->
-    <div id="config-section-crop" hidden>
-      <div id="crop-coord-display">
-        Define crop area: top-left (0, 0) &rarr; bottom-right (0, 0)
-      </div>
-      <p class="crop-instruction">
-        Click top-left corner, then bottom-right corner on the video.
-      </p>
-      <div class="crop-buttons">
-        <button class="action-btn" id="btn-reset-area">Reset Area</button>
-        <button class="action-btn execute" id="btn-execute-crop" disabled>
-          Execute Crop!
-        </button>
-        <button class="action-btn cancel" id="btn-cancel-crop">Cancel</button>
-      </div>
+    <!-- Downscale config -->
+    <div id="config-section-downscale" hidden>
+      <label class="config-label" for="input-scale-width"
+        >Scale Width (height auto)</label
+      >
+      <input
+        class="config-number"
+        type="number"
+        id="input-scale-width"
+        value="1280"
+        min="1"
+      />
     </div>
 
-    <!-- Convert Format config (Convert state) -->
-    <div id="config-section-convert" hidden>
-      <label class="config-label" for="input-src-format">Source Format</label>
+    <!-- Compress config -->
+    <div id="config-section-compress" hidden>
+      <label class="config-label" for="input-crf"
+        >Compression CRF (lower = better quality)</label
+      >
       <input
-        class="config-text"
-        type="text"
-        id="input-src-format"
-        value="webm"
+        class="config-number"
+        type="number"
+        id="input-crf"
+        value="23"
+        min="0"
+        max="51"
       />
-      <label class="config-label" for="input-dest-format">Dest Format</label>
-      <input
-        class="config-text"
-        type="text"
-        id="input-dest-format"
-        value="mp4"
-      />
-      <button class="action-btn execute" id="btn-execute-convert">
-        Execute Convert!
+    </div>
+
+    <!-- Replace-audio config -->
+    <div id="config-section-audio-map" hidden>
+      <button class="action-btn" id="btn-pick-audio">Choose Audio File…</button>
+      <span class="time-label" id="audio-file-label">No file selected</span>
+    </div>
+
+    <!-- Run controls -->
+    <div id="run-controls" hidden>
+      <button class="action-btn cancel" id="btn-clear-all">Clear All</button>
+      <button class="action-btn execute" id="btn-execute" disabled>
+        Execute Action(s)
       </button>
-      <button class="action-btn cancel" id="btn-cancel-convert">Cancel</button>
     </div>
 
     <!-- Status (shown whenever media is loaded) -->

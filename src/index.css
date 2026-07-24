@@ -224,9 +224,12 @@ body {
 
 #config-section[hidden],
 #config-section-downsample[hidden],
+#config-section-downscale[hidden],
+#config-section-compress[hidden],
 #config-section-crop[hidden],
-#config-section-convert[hidden],
+#config-section-audio-map[hidden],
 #actions[hidden],
+#run-controls[hidden],
 #status-section[hidden],
 #player-wrapper[hidden] {
   display: none;
@@ -234,7 +237,36 @@ body {
 
 /* ── Config inputs ───────────────────────────────────────────────────────────── */
 
-#config-section-downsample {
+#config-section-downsample,
+#config-section-downscale,
+#config-section-compress,
+#config-section-audio-map {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #ddd;
+  cursor: pointer;
+  user-select: none;
+}
+
+.action-check[hidden] {
+  display: none;
+}
+
+.action-check input {
+  cursor: pointer;
+}
+
+#run-controls {
   display: flex;
   flex-direction: row;
   align-items: center;
