@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, statSync } from "node:fs";
 import started from "electron-squirrel-startup";
 
 const execFileAsync = promisify(execFile);
@@ -71,6 +71,52 @@ function getFfmpegPath(): string {
   }
 }
 
+function getFavoriteFolders(): string[] {
+  let content: string;
+  try {
+    content = readFileSync(
+      path.join(app.getAppPath(), "favorite_folders.txt"),
+      "utf-8",
+    );
+  } catch {
+    // No favorites file → feature is simply inactive.
+    return [];
+  }
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .filter((dir) => {
+      try {
+        return statSync(dir).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+}
+
+ipcMain.handle("favorites:get", () => getFavoriteFolders());
+
+ipcMain.handle("favorites:add", (_event, folder: string) => {
+  const entry = String(folder ?? "").trim();
+  if (!entry) return getFavoriteFolders();
+
+  const file = path.join(app.getAppPath(), "favorite_folders.txt");
+  let existing = "";
+  try {
+    existing = readFileSync(file, "utf-8");
+  } catch {
+    existing = "";
+  }
+
+  const prefix =
+    existing.length > 0 && !existing.endsWith("\n")
+      ? `${existing}\n`
+      : existing;
+  writeFileSync(file, `${prefix}${entry}\n`, "utf-8");
+  return getFavoriteFolders();
+});
+
 ipcMain.handle("ffmpeg:get-path", () => getFfmpegPath());
 
 ipcMain.handle("ffmpeg:set-path", (_event, value: string) => {
@@ -90,9 +136,10 @@ ipcMain.handle("dialog:pick-ffmpeg", async () => {
   return canceled ? null : filePaths[0];
 });
 
-ipcMain.handle("dialog:open-video", async () => {
+ipcMain.handle("dialog:open-video", async (_event, defaultPath?: string) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ["openFile"],
+    ...(defaultPath ? { defaultPath } : {}),
     filters: [
       {
         name: "Videos",
@@ -103,9 +150,10 @@ ipcMain.handle("dialog:open-video", async () => {
   return canceled ? null : filePaths[0];
 });
 
-ipcMain.handle("dialog:open-audio", async () => {
+ipcMain.handle("dialog:open-audio", async (_event, defaultPath?: string) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ["openFile"],
+    ...(defaultPath ? { defaultPath } : {}),
     filters: [
       {
         name: "Audio",

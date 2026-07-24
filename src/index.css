@@ -65,6 +65,45 @@ body {
   display: none;
 }
 
+/* ── Favorite folders selector ─────────────────────────────────────────────── */
+
+#favorites-bar {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#favorites-bar[hidden] {
+  display: none;
+}
+
+#favorites-bar label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#favorites-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 8px;
+  background: #1c1c1c;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+#btn-add-favorite {
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#btn-add-favorite[hidden] {
+  display: none;
+}
+
 /* ── Drop zone ─────────────────────────────────────────────────────────────── */
 
 #drop-zone {

@@ -22,8 +22,10 @@ interface RunResult {
 declare global {
   interface Window {
     electronAPI: {
-      openVideo: () => Promise<string | null>;
-      pickAudio: () => Promise<string | null>;
+      openVideo: (defaultPath?: string) => Promise<string | null>;
+      pickAudio: (defaultPath?: string) => Promise<string | null>;
+      getFavorites: () => Promise<string[]>;
+      addFavorite: (folder: string) => Promise<string[]>;
       getFilePath: (file: File) => string;
       runActions: (options: RunOptions) => Promise<RunResult>;
       getFfmpegPath: () => Promise<string>;

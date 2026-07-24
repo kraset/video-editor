@@ -62,6 +62,74 @@ void window.electronAPI.getFfmpegPath().then((saved) => {
   refreshFfmpegWarning();
 });
 
+// ── Favorite folders selector ──────────────────────────────────────────────────
+
+const favoritesBar = document.getElementById("favorites-bar") as HTMLDivElement;
+const favoritesSelect = document.getElementById(
+  "favorites-select",
+) as HTMLSelectElement;
+const btnAddFavorite = document.getElementById(
+  "btn-add-favorite",
+) as HTMLButtonElement;
+
+let favoriteFolders: string[] = [];
+let showAddFolderToFavorites = false;
+let pendingFavoriteFolder = "";
+
+function selectedFavorite(): string | undefined {
+  const value = favoritesSelect.value.trim();
+  return value.length > 0 ? value : undefined;
+}
+
+function normalizeDir(p: string): string {
+  return p.replace(/[\\/]+$/, "").toLowerCase();
+}
+
+function folderOf(filePath: string): string {
+  return filePath.replace(/[\\/][^\\/]*$/, "");
+}
+
+function addFavoriteOption(folder: string): void {
+  const option = document.createElement("option");
+  option.value = folder;
+  option.textContent = folder;
+  favoritesSelect.appendChild(option);
+}
+
+function refreshAddFavoriteButton(): void {
+  btnAddFavorite.hidden = !showAddFolderToFavorites;
+  // The button lives on the favorites row, so make sure the row is visible
+  // even when there are no favorites yet (e.g. the file doesn't exist).
+  if (showAddFolderToFavorites) favoritesBar.hidden = false;
+}
+
+// After a file is picked, offer to remember its folder unless it's already known.
+function maybeOfferAddToFavorites(filePath: string): void {
+  const folder = folderOf(filePath);
+  const known = favoriteFolders.some(
+    (f) => normalizeDir(f) === normalizeDir(folder),
+  );
+  showAddFolderToFavorites = !known;
+  pendingFavoriteFolder = known ? "" : folder;
+  refreshAddFavoriteButton();
+}
+
+btnAddFavorite.addEventListener("click", async () => {
+  if (!pendingFavoriteFolder) return;
+  favoriteFolders = await window.electronAPI.addFavorite(pendingFavoriteFolder);
+  addFavoriteOption(pendingFavoriteFolder);
+  pendingFavoriteFolder = "";
+  showAddFolderToFavorites = false;
+  refreshAddFavoriteButton();
+});
+
+void window.electronAPI.getFavorites().then((folders) => {
+  favoriteFolders = folders;
+  if (!folders.length) return;
+  for (const folder of folders) addFavoriteOption(folder);
+  favoritesBar.hidden = false;
+});
+
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
 const dropZone = document.getElementById("drop-zone") as HTMLDivElement;
@@ -372,8 +440,11 @@ function loadVideoFromPath(filePath: string): void {
 }
 
 pickFileBtn.addEventListener("click", async () => {
-  const filePath = await window.electronAPI.openVideo();
-  if (filePath) loadVideoFromPath(filePath);
+  const filePath = await window.electronAPI.openVideo(selectedFavorite());
+  if (filePath) {
+    maybeOfferAddToFavorites(filePath);
+    loadVideoFromPath(filePath);
+  }
 });
 
 // ── Drag & drop ───────────────────────────────────────────────────────────────
@@ -676,7 +747,7 @@ function computeCrop(): { w: number; h: number; x: number; y: number } | null {
 // ── Replace-audio config ──────────────────────────────────────────────────────
 
 btnPickAudio.addEventListener("click", async () => {
-  const filePath = await window.electronAPI.pickAudio();
+  const filePath = await window.electronAPI.pickAudio(selectedFavorite());
   if (filePath) {
     audioFilePath = filePath;
     audioFileLabel.textContent = filePath.split(/[\\/]/).pop() ?? filePath;

@@ -4,10 +4,13 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  openVideo: (): Promise<string | null> =>
-    ipcRenderer.invoke("dialog:open-video"),
-  pickAudio: (): Promise<string | null> =>
-    ipcRenderer.invoke("dialog:open-audio"),
+  openVideo: (defaultPath?: string): Promise<string | null> =>
+    ipcRenderer.invoke("dialog:open-video", defaultPath),
+  pickAudio: (defaultPath?: string): Promise<string | null> =>
+    ipcRenderer.invoke("dialog:open-audio", defaultPath),
+  getFavorites: (): Promise<string[]> => ipcRenderer.invoke("favorites:get"),
+  addFavorite: (folder: string): Promise<string[]> =>
+    ipcRenderer.invoke("favorites:add", folder),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   runActions: (
     options: unknown,
