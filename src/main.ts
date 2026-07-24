@@ -31,6 +31,14 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
+
+  // Toggle DevTools with F12 in every build (the default accelerator is not
+  // available once the app is packaged).
+  mainWindow.webContents.on("before-input-event", (_event, input) => {
+    if (input.type === "keyDown" && input.key === "F12") {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
 };
 
 // This method will be called when Electron has finished
@@ -63,6 +71,16 @@ function ffmpegPathFile(): string {
   return path.join(app.getPath("userData"), "ffmpeg_path.txt");
 }
 
+// Resolve the favorites file to a writable, easy-to-find location:
+// next to the executable in a packaged build (the app.asar archive is
+// read-only), or the project root while developing.
+function favoriteFoldersFile(): string {
+  const dir = app.isPackaged
+    ? path.dirname(app.getPath("exe"))
+    : app.getAppPath();
+  return path.join(dir, "favorite_folders.txt");
+}
+
 function getFfmpegPath(): string {
   try {
     return readFileSync(ffmpegPathFile(), "utf-8").trim();
@@ -74,10 +92,7 @@ function getFfmpegPath(): string {
 function getFavoriteFolders(): string[] {
   let content: string;
   try {
-    content = readFileSync(
-      path.join(app.getAppPath(), "favorite_folders.txt"),
-      "utf-8",
-    );
+    content = readFileSync(favoriteFoldersFile(), "utf-8");
   } catch {
     // No favorites file → feature is simply inactive.
     return [];
@@ -99,22 +114,28 @@ ipcMain.handle("favorites:get", () => getFavoriteFolders());
 
 ipcMain.handle("favorites:add", (_event, folder: string) => {
   const entry = String(folder ?? "").trim();
-  if (!entry) return getFavoriteFolders();
+  if (!entry) return { folders: getFavoriteFolders() };
 
-  const file = path.join(app.getAppPath(), "favorite_folders.txt");
-  let existing = "";
+  const file = favoriteFoldersFile();
   try {
-    existing = readFileSync(file, "utf-8");
-  } catch {
-    existing = "";
-  }
+    let existing = "";
+    try {
+      existing = readFileSync(file, "utf-8");
+    } catch {
+      existing = "";
+    }
 
-  const prefix =
-    existing.length > 0 && !existing.endsWith("\n")
-      ? `${existing}\n`
-      : existing;
-  writeFileSync(file, `${prefix}${entry}\n`, "utf-8");
-  return getFavoriteFolders();
+    const prefix =
+      existing.length > 0 && !existing.endsWith("\n")
+        ? `${existing}\n`
+        : existing;
+    writeFileSync(file, `${prefix}${entry}\n`, "utf-8");
+    return { folders: getFavoriteFolders() };
+  } catch (err: unknown) {
+    const message = `Could not write to ${file}: ${String(err)}`;
+    console.error(message);
+    return { folders: getFavoriteFolders(), error: message };
+  }
 });
 
 ipcMain.handle("ffmpeg:get-path", () => getFfmpegPath());

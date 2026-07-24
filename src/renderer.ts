@@ -116,7 +116,12 @@ function maybeOfferAddToFavorites(filePath: string): void {
 
 btnAddFavorite.addEventListener("click", async () => {
   if (!pendingFavoriteFolder) return;
-  favoriteFolders = await window.electronAPI.addFavorite(pendingFavoriteFolder);
+  const result = await window.electronAPI.addFavorite(pendingFavoriteFolder);
+  favoriteFolders = result.folders;
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
   addFavoriteOption(pendingFavoriteFolder);
   pendingFavoriteFolder = "";
   showAddFolderToFavorites = false;

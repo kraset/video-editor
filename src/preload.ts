@@ -9,7 +9,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   pickAudio: (defaultPath?: string): Promise<string | null> =>
     ipcRenderer.invoke("dialog:open-audio", defaultPath),
   getFavorites: (): Promise<string[]> => ipcRenderer.invoke("favorites:get"),
-  addFavorite: (folder: string): Promise<string[]> =>
+  addFavorite: (
+    folder: string,
+  ): Promise<{ folders: string[]; error?: string }> =>
     ipcRenderer.invoke("favorites:add", folder),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   runActions: (
