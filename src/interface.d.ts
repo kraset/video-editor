@@ -25,6 +25,9 @@ declare global {
       pickAudio: () => Promise<string | null>;
       getFilePath: (file: File) => string;
       runActions: (options: RunOptions) => Promise<RunResult>;
+      getFfmpegPath: () => Promise<string>;
+      setFfmpegPath: (value: string) => Promise<boolean>;
+      pickFfmpeg: () => Promise<string | null>;
     };
   }
 }

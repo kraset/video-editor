@@ -19,6 +19,52 @@ body {
   gap: 24px;
 }
 
+/* ── FFMPEG path bar ───────────────────────────────────────────────────────── */
+
+#ffmpeg-bar {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#ffmpeg-bar label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#ffmpeg-path-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 8px;
+  background: #1c1c1c;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+#ffmpeg-browse-btn {
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+#ffmpeg-status {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+#ffmpeg-warning {
+  color: #ff4d4d;
+  font-weight: 700;
+  width: 100%;
+}
+
+#ffmpeg-warning[hidden] {
+  display: none;
+}
+
 /* ── Drop zone ─────────────────────────────────────────────────────────────── */
 
 #drop-zone {

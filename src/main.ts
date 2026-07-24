@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { readFileSync, writeFileSync } from "node:fs";
 import started from "electron-squirrel-startup";
 
 const execFileAsync = promisify(execFile);
@@ -30,9 +31,6 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
@@ -61,7 +59,36 @@ app.on("activate", () => {
 
 // ── IPC handlers ─────────────────────────────────────────────────────────────
 
-const FFMPEG = "C:\\eget\\ffmpeg6\\bin\\ffmpeg.exe";
+function ffmpegPathFile(): string {
+  return path.join(app.getPath("userData"), "ffmpeg_path.txt");
+}
+
+function getFfmpegPath(): string {
+  try {
+    return readFileSync(ffmpegPathFile(), "utf-8").trim();
+  } catch {
+    return "";
+  }
+}
+
+ipcMain.handle("ffmpeg:get-path", () => getFfmpegPath());
+
+ipcMain.handle("ffmpeg:set-path", (_event, value: string) => {
+  writeFileSync(ffmpegPathFile(), String(value ?? "").trim(), "utf-8");
+  return true;
+});
+
+ipcMain.handle("dialog:pick-ffmpeg", async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    title: "Select your ffmpeg executable",
+    properties: ["openFile"],
+    filters: [
+      { name: "ffmpeg executable", extensions: ["exe"] },
+      { name: "All files", extensions: ["*"] },
+    ],
+  });
+  return canceled ? null : filePaths[0];
+});
 
 ipcMain.handle("dialog:open-video", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -124,6 +151,8 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
     audioFile,
     convert,
   } = opts;
+
+  const FFMPEG = getFfmpegPath();
 
   const srcExt = path.extname(filePath); // e.g. ".webm"
   const base = path.basename(filePath, srcExt);

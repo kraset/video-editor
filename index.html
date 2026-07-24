@@ -5,6 +5,17 @@
     <title>Video Editor</title>
   </head>
   <body>
+    <!-- FFMPEG path configuration bar -->
+    <div id="ffmpeg-bar">
+      <label for="ffmpeg-path-input">FFMPEG file path:</label>
+      <input type="text" id="ffmpeg-path-input" spellcheck="false" readonly />
+      <button id="ffmpeg-browse-btn">Browse…</button>
+      <span id="ffmpeg-status"></span>
+      <span id="ffmpeg-warning">
+        You have to enter and save the path to your FFMPEG file.
+      </span>
+    </div>
+
     <!-- Shown when no video is loaded -->
     <div id="drop-zone">
       <div id="drop-zone-inner">

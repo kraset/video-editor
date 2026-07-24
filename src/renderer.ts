@@ -28,6 +28,40 @@
 
 import "./index.css";
 
+// ── FFMPEG path bar ───────────────────────────────────────────────────────────
+
+const ffmpegInput = document.getElementById(
+  "ffmpeg-path-input",
+) as HTMLInputElement;
+const ffmpegBrowseBtn = document.getElementById(
+  "ffmpeg-browse-btn",
+) as HTMLButtonElement;
+const ffmpegStatus = document.getElementById(
+  "ffmpeg-status",
+) as HTMLSpanElement;
+const ffmpegWarning = document.getElementById(
+  "ffmpeg-warning",
+) as HTMLSpanElement;
+
+function refreshFfmpegWarning(): void {
+  const empty = ffmpegInput.value.trim().length === 0;
+  ffmpegWarning.hidden = !empty;
+}
+
+ffmpegBrowseBtn.addEventListener("click", async () => {
+  const picked = await window.electronAPI.pickFfmpeg();
+  if (!picked) return;
+  ffmpegInput.value = picked;
+  await window.electronAPI.setFfmpegPath(picked);
+  ffmpegStatus.textContent = "Status: Saved!";
+  refreshFfmpegWarning();
+});
+
+void window.electronAPI.getFfmpegPath().then((saved) => {
+  ffmpegInput.value = saved ?? "";
+  refreshFfmpegWarning();
+});
+
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
 const dropZone = document.getElementById("drop-zone") as HTMLDivElement;

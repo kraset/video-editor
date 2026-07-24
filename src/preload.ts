@@ -13,4 +13,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     options: unknown,
   ): Promise<{ success: boolean; outputPath?: string; error?: string }> =>
     ipcRenderer.invoke("process:run", options),
+  getFfmpegPath: (): Promise<string> => ipcRenderer.invoke("ffmpeg:get-path"),
+  setFfmpegPath: (value: string): Promise<boolean> =>
+    ipcRenderer.invoke("ffmpeg:set-path", value),
+  pickFfmpeg: (): Promise<string | null> =>
+    ipcRenderer.invoke("dialog:pick-ffmpeg"),
 });
