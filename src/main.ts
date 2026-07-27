@@ -307,7 +307,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
   if (audio === "remove") {
     args.push("-an");
   } else if (audio === "map") {
-    args.push("-map", "0:v:0", "-map", "1:a:0", "-q:a", "0");
+    args.push("-map", "0:v:0", "-map", "1:a:0", "-q:a", "0", "-shortest");
   }
 
   args.push("-y", outputPath);
