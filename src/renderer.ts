@@ -28,6 +28,44 @@
 
 import "./index.css";
 
+// ── Zoom (Ctrl+/-, Ctrl+0, Ctrl+MouseWheel) ──────────────────────────────
+function getZoom(): number {
+  return parseFloat(
+    document.documentElement.style.getPropertyValue("zoom") || "1",
+  );
+}
+function setZoom(factor: number): void {
+  const clamped = Math.min(5, Math.max(0.2, factor));
+  document.documentElement.style.setProperty(
+    "zoom",
+    String(Math.round(clamped * 100) / 100),
+  );
+}
+
+window.addEventListener("keydown", (e) => {
+  if (!e.ctrlKey) return;
+  if (e.key === "+" || e.key === "=") {
+    e.preventDefault();
+    setZoom(getZoom() + 0.1);
+  } else if (e.key === "-") {
+    e.preventDefault();
+    setZoom(getZoom() - 0.1);
+  } else if (e.key === "0") {
+    e.preventDefault();
+    setZoom(1);
+  }
+});
+
+window.addEventListener(
+  "wheel",
+  (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(getZoom() + (e.deltaY < 0 ? 0.1 : -0.1));
+  },
+  { passive: false },
+);
+
 // ── FFMPEG path bar ───────────────────────────────────────────────────────────
 
 const ffmpegInput = document.getElementById(
