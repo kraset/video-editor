@@ -235,18 +235,49 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
   // concatenate them into a single output via one filter_complex graph.
   if (multiConcat && multiConcat.ranges.length > 0) {
     const ranges = multiConcat.ranges;
+
+    // Detect whether the input has an audio stream so we don't add audio
+    // filters for video-only files (which would cause ffmpeg to fail).
+    let hasAudio = false;
+    try {
+      const ffmpegDir = path.dirname(FFMPEG);
+      const ffprobeBin = path.join(ffmpegDir, "ffprobe.exe");
+      const probeResult = await execFileAsync(ffprobeBin, [
+        "-v",
+        "error",
+        "-select_streams",
+        "a:0",
+        "-show_entries",
+        "stream=codec_type",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        filePath,
+      ]);
+      hasAudio = probeResult.stdout.trim().length > 0;
+    } catch {
+      // ffprobe not available – fall back to trying with audio
+      hasAudio = true;
+    }
+
     const segments: string[] = [];
     const concatInputs: string[] = [];
     ranges.forEach((r, i) => {
       segments.push(
         `[0:v]trim=start=${r.start}:end=${r.end},setpts=PTS-STARTPTS[v${i}]`,
-        `[0:a]atrim=start=${r.start}:end=${r.end},asetpts=PTS-STARTPTS[a${i}]`,
       );
-      concatInputs.push(`[v${i}][a${i}]`);
+      if (hasAudio) {
+        segments.push(
+          `[0:a]atrim=start=${r.start}:end=${r.end},asetpts=PTS-STARTPTS[a${i}]`,
+        );
+        concatInputs.push(`[v${i}][a${i}]`);
+      } else {
+        concatInputs.push(`[v${i}]`);
+      }
     });
-    const filter = `${segments.join(";")};${concatInputs.join(
-      "",
-    )}concat=n=${ranges.length}:v=1:a=1[v][a]`;
+    const concatSuffix = hasAudio
+      ? `concat=n=${ranges.length}:v=1:a=1[v][a]`
+      : `concat=n=${ranges.length}:v=1:a=0[v]`;
+    const filter = `${segments.join(";")};${concatInputs.join("")}${concatSuffix}`;
     const mcArgs = [
       "-i",
       filePath,
@@ -254,8 +285,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
       filter,
       "-map",
       "[v]",
-      "-map",
-      "[a]",
+      ...(hasAudio ? ["-map", "[a]"] : []),
       "-y",
       outputPath,
     ];
