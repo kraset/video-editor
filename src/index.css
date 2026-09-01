@@ -372,6 +372,7 @@ body {
 #config-section-scale[hidden],
 #config-section-fps[hidden],
 #config-section-slowdown[hidden],
+#config-section-transform[hidden],
 #config-section-compress[hidden],
 #config-section-crop[hidden],
 #config-section-audio-map[hidden],
@@ -389,6 +390,7 @@ body {
 #config-section-scale,
 #config-section-fps,
 #config-section-slowdown,
+#config-section-transform,
 #config-section-compress,
 #config-section-audio-map {
   display: flex;
@@ -396,6 +398,16 @@ body {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+#custom-rotate-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#custom-rotate-field[hidden] {
+  display: none;
 }
 
 #config-section-scale {

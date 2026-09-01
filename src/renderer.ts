@@ -228,6 +228,9 @@ const chkDownsample = document.getElementById(
 const chkScale = document.getElementById("chk-scale") as HTMLInputElement;
 const chkFps = document.getElementById("chk-fps") as HTMLInputElement;
 const chkSlowdown = document.getElementById("chk-slowdown") as HTMLInputElement;
+const chkTransform = document.getElementById(
+  "chk-transform",
+) as HTMLInputElement;
 const chkCompress = document.getElementById("chk-compress") as HTMLInputElement;
 const chkAudioRemove = document.getElementById(
   "chk-audio-remove",
@@ -313,6 +316,26 @@ const configSectionSlowdown = document.getElementById(
 ) as HTMLDivElement;
 const inputSlowdown = document.getElementById(
   "input-slowdown",
+) as HTMLInputElement;
+
+// Transform config
+const configSectionTransform = document.getElementById(
+  "config-section-transform",
+) as HTMLDivElement;
+const chkMirrorHorizontal = document.getElementById(
+  "chk-mirror-horizontal",
+) as HTMLInputElement;
+const chkFlipVertical = document.getElementById(
+  "chk-flip-vertical",
+) as HTMLInputElement;
+const selectRotate = document.getElementById(
+  "select-rotate",
+) as HTMLSelectElement;
+const customRotateField = document.getElementById(
+  "custom-rotate-field",
+) as HTMLDivElement;
+const inputCustomRotate = document.getElementById(
+  "input-custom-rotate",
 ) as HTMLInputElement;
 
 // Compress config
@@ -417,6 +440,7 @@ function validateActionInfo(): boolean {
     chkScale.checked ||
     chkFps.checked ||
     chkSlowdown.checked ||
+    chkTransform.checked ||
     chkCompress.checked ||
     chkAudioRemove.checked ||
     chkAudioMap.checked ||
@@ -448,6 +472,13 @@ function validateActionInfo(): boolean {
     return false;
   if (chkSlowdown.checked && !validNumber(inputSlowdown.value, 0.01))
     return false;
+  if (
+    chkTransform.checked &&
+    selectRotate.value === "custom" &&
+    (inputCustomRotate.value.trim() === "" ||
+      !Number.isFinite(Number(inputCustomRotate.value)))
+  )
+    return false;
   if (chkCompress.checked && !validNumber(inputCrf.value, 0)) return false;
   if (chkAudioMap.checked && !audioFilePath) return false;
   return true;
@@ -461,6 +492,8 @@ function updateConfigVisibility(): void {
   setHidden(configSectionScale, !chkScale.checked);
   setHidden(configSectionFps, !chkFps.checked);
   setHidden(configSectionSlowdown, !chkSlowdown.checked);
+  setHidden(configSectionTransform, !chkTransform.checked);
+  setHidden(customRotateField, selectRotate.value !== "custom");
   setHidden(configSectionCompress, !chkCompress.checked);
   setHidden(configSectionAudioMap, !chkAudioMap.checked);
   setHidden(configSectionMc, !chkMultiConcat.checked);
@@ -483,6 +516,7 @@ function updateActionAvailability(): void {
     chkScale.checked ||
     chkFps.checked ||
     chkSlowdown.checked ||
+    chkTransform.checked ||
     chkCompress.checked ||
     chkAudioRemove.checked ||
     chkAudioMap.checked ||
@@ -495,6 +529,7 @@ function updateActionAvailability(): void {
     chkScale,
     chkFps,
     chkSlowdown,
+    chkTransform,
     chkCompress,
     chkAudioRemove,
     chkAudioMap,
@@ -706,6 +741,7 @@ for (const chk of [
   chkDownsample,
   chkScale,
   chkFps,
+  chkTransform,
   chkCompress,
   chkConvert,
   chkMultiConcat,
@@ -728,12 +764,16 @@ for (const input of [
   inputScaleHeight,
   inputFps,
   inputSlowdown,
+  inputCustomRotate,
   inputCrf,
 ]) {
   input.addEventListener("input", refreshUI);
 }
 
 selectScaleResolution.addEventListener("change", refreshUI);
+selectRotate.addEventListener("change", refreshUI);
+chkMirrorHorizontal.addEventListener("change", refreshUI);
+chkFlipVertical.addEventListener("change", refreshUI);
 chkFpsSource.addEventListener("change", () => {
   inputFps.disabled = chkFpsSource.checked;
   refreshUI();
@@ -1072,6 +1112,7 @@ function clearAllActions(): void {
     chkScale,
     chkFps,
     chkSlowdown,
+    chkTransform,
     chkCompress,
     chkAudioRemove,
     chkAudioMap,
@@ -1096,6 +1137,10 @@ function clearAllActions(): void {
   chkHeightFollows.checked = true;
   chkFpsSource.checked = true;
   inputFps.disabled = true;
+  chkMirrorHorizontal.checked = false;
+  chkFlipVertical.checked = false;
+  selectRotate.value = "0";
+  inputCustomRotate.value = "0";
 }
 
 btnClearAll.addEventListener("click", () => {
@@ -1132,6 +1177,16 @@ btnExecute.addEventListener("click", async () => {
         : undefined,
     slowdown: chkSlowdown.checked
       ? Math.max(0.01, Number(inputSlowdown.value))
+      : undefined,
+    transform: chkTransform.checked
+      ? {
+          mirrorHorizontal: chkMirrorHorizontal.checked,
+          flipVertical: chkFlipVertical.checked,
+          rotate:
+            selectRotate.value === "custom"
+              ? Number(inputCustomRotate.value)
+              : Number(selectRotate.value),
+        }
       : undefined,
     audio: chkAudioRemove.checked
       ? ("remove" as const)

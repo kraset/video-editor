@@ -19,6 +19,11 @@ export interface RunOptions {
   compress?: { crf: number };
   frameRate?: number;
   slowdown?: number;
+  transform?: {
+    mirrorHorizontal: boolean;
+    flipVertical: boolean;
+    rotate: number;
+  };
   audio: "none" | "remove" | "map";
   audioFile?: string;
   convert: boolean;
@@ -74,8 +79,16 @@ export function buildFfmpegArgs(
   options: RunOptions,
   outputPath: string,
 ): string[] {
-  const { filePath, trim, crop, downsample, scale, compress, frameRate } =
-    options;
+  const {
+    filePath,
+    trim,
+    crop,
+    downsample,
+    scale,
+    compress,
+    frameRate,
+    transform,
+  } = options;
   const slowdown = options.slowdown;
 
   if (trim?.mode === "fast") {
@@ -114,6 +127,16 @@ export function buildFfmpegArgs(
       "setpts=N/FRAME_RATE/TB",
     );
   }
+  if (transform?.mirrorHorizontal) filters.push("hflip");
+  if (transform?.flipVertical) filters.push("vflip");
+  if (transform?.rotate === 90) filters.push("transpose=1");
+  else if (transform?.rotate === 180) filters.push("hflip", "vflip");
+  else if (transform?.rotate === 270) filters.push("transpose=2");
+  else if (transform && transform.rotate !== 0) {
+    filters.push(
+      `rotate=${ffmpegNumber(transform.rotate)}*PI/180:ow=rotw(iw):oh=roth(ih)`,
+    );
+  }
   if (scale) filters.push(...scaleFilters(scale));
   if (trim?.mode === "nice") filters.push("setpts=PTS-STARTPTS");
   if (slowdown !== undefined) filters.push(`setpts=${slowdown}*PTS`);
@@ -126,6 +149,7 @@ export function buildFfmpegArgs(
     compress ||
     frameRate ||
     slowdown ||
+    transform ||
     options.convert,
   );
   if (reencodeVideo) filters.push("setsar=1");
