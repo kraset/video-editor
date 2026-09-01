@@ -215,14 +215,19 @@ const playSpeedValue = document.getElementById(
 const actionsSection = document.getElementById("actions") as HTMLDivElement;
 
 // Action checkboxes
-const chkTrim = document.getElementById("chk-trim") as HTMLInputElement;
+const chkNiceTrim = document.getElementById(
+  "chk-nice-trim",
+) as HTMLInputElement;
+const chkFastTrim = document.getElementById(
+  "chk-fast-trim",
+) as HTMLInputElement;
 const chkCrop = document.getElementById("chk-crop") as HTMLInputElement;
 const chkDownsample = document.getElementById(
   "chk-downsample",
 ) as HTMLInputElement;
-const chkDownscale = document.getElementById(
-  "chk-downscale",
-) as HTMLInputElement;
+const chkScale = document.getElementById("chk-scale") as HTMLInputElement;
+const chkFps = document.getElementById("chk-fps") as HTMLInputElement;
+const chkSlowdown = document.getElementById("chk-slowdown") as HTMLInputElement;
 const chkCompress = document.getElementById("chk-compress") as HTMLInputElement;
 const chkAudioRemove = document.getElementById(
   "chk-audio-remove",
@@ -266,12 +271,48 @@ const inputNthFrame = document.getElementById(
   "input-nth-frame",
 ) as HTMLInputElement;
 
-// Downscale config
-const configSectionDownscale = document.getElementById(
-  "config-section-downscale",
+// Scale config
+const configSectionScale = document.getElementById(
+  "config-section-scale",
+) as HTMLDivElement;
+const selectScaleResolution = document.getElementById(
+  "select-scale-resolution",
+) as HTMLSelectElement;
+const scaleCustomFields = document.getElementById(
+  "scale-custom-fields",
 ) as HTMLDivElement;
 const inputScaleWidth = document.getElementById(
   "input-scale-width",
+) as HTMLInputElement;
+const inputScaleHeight = document.getElementById(
+  "input-scale-height",
+) as HTMLInputElement;
+const chkWidthFollows = document.getElementById(
+  "chk-width-follows",
+) as HTMLInputElement;
+const chkHeightFollows = document.getElementById(
+  "chk-height-follows",
+) as HTMLInputElement;
+const scaleModeFields = document.getElementById(
+  "scale-mode-fields",
+) as HTMLFieldSetElement;
+const scaleWarning = document.getElementById("scale-warning") as HTMLDivElement;
+
+// FPS config
+const configSectionFps = document.getElementById(
+  "config-section-fps",
+) as HTMLDivElement;
+const chkFpsSource = document.getElementById(
+  "chk-fps-source",
+) as HTMLInputElement;
+const inputFps = document.getElementById("input-fps") as HTMLInputElement;
+
+// Slowdown config
+const configSectionSlowdown = document.getElementById(
+  "config-section-slowdown",
+) as HTMLDivElement;
+const inputSlowdown = document.getElementById(
+  "input-slowdown",
 ) as HTMLInputElement;
 
 // Compress config
@@ -369,10 +410,13 @@ function validNumber(value: string, min: number): boolean {
  *  the parameters it requires. */
 function validateActionInfo(): boolean {
   const anyChecked =
-    chkTrim.checked ||
+    chkNiceTrim.checked ||
+    chkFastTrim.checked ||
     chkCrop.checked ||
     chkDownsample.checked ||
-    chkDownscale.checked ||
+    chkScale.checked ||
+    chkFps.checked ||
+    chkSlowdown.checked ||
     chkCompress.checked ||
     chkAudioRemove.checked ||
     chkAudioMap.checked ||
@@ -385,14 +429,24 @@ function validateActionInfo(): boolean {
   if (chkMultiConcat.checked) return mcRanges.length >= 1;
 
   if (
-    chkTrim.checked &&
+    (chkNiceTrim.checked || chkFastTrim.checked) &&
     (rangeStart === null || rangeEnd === null || rangeEnd <= rangeStart)
   )
     return false;
   if (chkCrop.checked && (!cropStart || !cropEnd)) return false;
   if (chkDownsample.checked && !validNumber(inputNthFrame.value, 1))
     return false;
-  if (chkDownscale.checked && !validNumber(inputScaleWidth.value, 1))
+  if (chkScale.checked) {
+    const scale = selectedScale();
+    if (!scale || scale.width < 1 || scale.height < 1) return false;
+  }
+  if (
+    chkFps.checked &&
+    !chkFpsSource.checked &&
+    !validNumber(inputFps.value, 1)
+  )
+    return false;
+  if (chkSlowdown.checked && !validNumber(inputSlowdown.value, 0.01))
     return false;
   if (chkCompress.checked && !validNumber(inputCrf.value, 0)) return false;
   if (chkAudioMap.checked && !audioFilePath) return false;
@@ -401,10 +455,12 @@ function validateActionInfo(): boolean {
 
 /** Show/hide each config section based on its checkbox. */
 function updateConfigVisibility(): void {
-  setHidden(configSection, !chkTrim.checked);
+  setHidden(configSection, !chkNiceTrim.checked && !chkFastTrim.checked);
   setHidden(configSectionCrop, !chkCrop.checked);
   setHidden(configSectionDs, !chkDownsample.checked);
-  setHidden(configSectionDownscale, !chkDownscale.checked);
+  setHidden(configSectionScale, !chkScale.checked);
+  setHidden(configSectionFps, !chkFps.checked);
+  setHidden(configSectionSlowdown, !chkSlowdown.checked);
   setHidden(configSectionCompress, !chkCompress.checked);
   setHidden(configSectionAudioMap, !chkAudioMap.checked);
   setHidden(configSectionMc, !chkMultiConcat.checked);
@@ -419,21 +475,26 @@ function isConvertApplicable(): boolean {
  *  hide one another so only one “mode” can be active at a time. */
 function updateActionAvailability(): void {
   const multiChecked = chkMultiConcat.checked;
-  const anyOther =
-    chkTrim.checked ||
+  const fastChecked = chkFastTrim.checked;
+  const anyRegular =
+    chkNiceTrim.checked ||
     chkCrop.checked ||
     chkDownsample.checked ||
-    chkDownscale.checked ||
+    chkScale.checked ||
+    chkFps.checked ||
+    chkSlowdown.checked ||
     chkCompress.checked ||
     chkAudioRemove.checked ||
     chkAudioMap.checked ||
     chkConvert.checked;
 
   for (const chk of [
-    chkTrim,
+    chkNiceTrim,
     chkCrop,
     chkDownsample,
-    chkDownscale,
+    chkScale,
+    chkFps,
+    chkSlowdown,
     chkCompress,
     chkAudioRemove,
     chkAudioMap,
@@ -442,16 +503,21 @@ function updateActionAvailability(): void {
     const label = chk.closest(".action-check") as HTMLElement | null;
     if (!label) continue;
     if (chk === chkConvert) {
-      setHidden(label, multiChecked || !isConvertApplicable());
+      setHidden(label, multiChecked || fastChecked || !isConvertApplicable());
+    } else if (chk === chkAudioRemove || chk === chkAudioMap) {
+      setHidden(label, multiChecked || fastChecked || chkSlowdown.checked);
     } else {
-      setHidden(label, multiChecked);
+      setHidden(label, multiChecked || fastChecked);
     }
   }
+
+  const fastLabel = chkFastTrim.closest(".action-check") as HTMLElement | null;
+  if (fastLabel) setHidden(fastLabel, multiChecked || anyRegular);
 
   const multiLabel = chkMultiConcat.closest(
     ".action-check",
   ) as HTMLElement | null;
-  if (multiLabel) setHidden(multiLabel, anyOther);
+  if (multiLabel) setHidden(multiLabel, fastChecked || anyRegular);
 }
 
 function refreshUI(): void {
@@ -463,6 +529,7 @@ function refreshUI(): void {
 
   updateConfigVisibility();
   updateActionAvailability();
+  updateScaleControls();
 
   if (!hasMedia) {
     appState = AppState.WaitingForMediaSelection;
@@ -533,6 +600,7 @@ video.addEventListener("loadedmetadata", () => {
   const portrait = video.videoHeight > video.videoWidth;
   videoContainer.classList.toggle("portrait", portrait);
   videoContainer.classList.toggle("landscape", !portrait);
+  refreshUI();
 });
 
 // ── Play / pause ──────────────────────────────────────────────────────────────
@@ -633,9 +701,11 @@ chkCrop.addEventListener("change", () => {
 });
 
 for (const chk of [
-  chkTrim,
+  chkNiceTrim,
+  chkFastTrim,
   chkDownsample,
-  chkDownscale,
+  chkScale,
+  chkFps,
   chkCompress,
   chkConvert,
   chkMultiConcat,
@@ -643,13 +713,150 @@ for (const chk of [
   chk.addEventListener("change", onCheckboxChange);
 }
 
+chkSlowdown.addEventListener("change", () => {
+  if (chkSlowdown.checked) {
+    chkAudioRemove.checked = false;
+    chkAudioMap.checked = false;
+  }
+  onCheckboxChange();
+});
+
 // Re-validate whenever a numeric config changes.
-for (const input of [inputNthFrame, inputScaleWidth, inputCrf]) {
+for (const input of [
+  inputNthFrame,
+  inputScaleWidth,
+  inputScaleHeight,
+  inputFps,
+  inputSlowdown,
+  inputCrf,
+]) {
   input.addEventListener("input", refreshUI);
+}
+
+selectScaleResolution.addEventListener("change", refreshUI);
+chkFpsSource.addEventListener("change", () => {
+  inputFps.disabled = chkFpsSource.checked;
+  refreshUI();
+});
+chkWidthFollows.addEventListener("change", () => {
+  if (chkWidthFollows.checked) chkHeightFollows.checked = false;
+  refreshUI();
+});
+chkHeightFollows.addEventListener("change", () => {
+  if (chkHeightFollows.checked) chkWidthFollows.checked = false;
+  refreshUI();
+});
+for (const radio of document.querySelectorAll<HTMLInputElement>(
+  'input[name="scale-mode"]',
+)) {
+  radio.addEventListener("change", refreshUI);
 }
 
 function onCheckboxChange(): void {
   refreshUI();
+}
+
+type SelectedScale = NonNullable<RunOptions["scale"]>;
+
+function selectedScaleMode(): "width" | "height" | "both" {
+  const selected = document.querySelector<HTMLInputElement>(
+    'input[name="scale-mode"]:checked',
+  );
+  return (selected?.value as "width" | "height" | "both") ?? "width";
+}
+
+function targetScaleSize(): { width: number; height: number } | null {
+  if (selectScaleResolution.value !== "custom") {
+    const [width, height] = selectScaleResolution.value.split("x").map(Number);
+    return { width, height };
+  }
+  const width = Math.floor(Number(inputScaleWidth.value));
+  const height = Math.floor(Number(inputScaleHeight.value));
+  return Number.isFinite(width) && Number.isFinite(height)
+    ? { width, height }
+    : null;
+}
+
+function scaleSourceSize(): { width: number; height: number } {
+  const crop = chkCrop.checked ? computeCrop() : null;
+  return crop
+    ? { width: crop.w, height: crop.h }
+    : { width: video.videoWidth, height: video.videoHeight };
+}
+
+function selectedScale(): SelectedScale | null {
+  const target = targetScaleSize();
+  if (!target) return null;
+  const custom = selectScaleResolution.value === "custom";
+  if (custom && chkWidthFollows.checked) {
+    return { ...target, mode: "fit-height" };
+  }
+  if (custom && chkHeightFollows.checked) {
+    return { ...target, mode: "fit-width" };
+  }
+
+  const mode = selectedScaleMode();
+  if (mode === "both") return { ...target, mode };
+  const source = scaleSourceSize();
+  if (!source.width || !source.height) return { ...target, mode };
+  const scaledOther =
+    mode === "width"
+      ? (source.height * target.width) / source.width
+      : (source.width * target.height) / source.height;
+  const targetOther = mode === "width" ? target.height : target.width;
+  const difference = scaledOther - targetOther;
+  const adjustment =
+    Math.abs(difference) < 1 ? undefined : difference < 0 ? "pad" : "crop";
+  return { ...target, mode, adjustment };
+}
+
+function updateScaleControls(): void {
+  const custom = selectScaleResolution.value === "custom";
+  setHidden(scaleCustomFields, !custom);
+  inputScaleWidth.disabled = custom && chkWidthFollows.checked;
+  inputScaleHeight.disabled = custom && chkHeightFollows.checked;
+  const followsAspect =
+    custom && (chkWidthFollows.checked || chkHeightFollows.checked);
+  setHidden(scaleModeFields, followsAspect);
+
+  const source = scaleSourceSize();
+  if (custom && source.width > 0 && source.height > 0) {
+    if (chkWidthFollows.checked && validNumber(inputScaleHeight.value, 1)) {
+      const width =
+        (Number(inputScaleHeight.value) * source.width) / source.height;
+      inputScaleWidth.value = String(Math.max(2, Math.round(width / 2) * 2));
+    } else if (
+      chkHeightFollows.checked &&
+      validNumber(inputScaleWidth.value, 1)
+    ) {
+      const height =
+        (Number(inputScaleWidth.value) * source.height) / source.width;
+      inputScaleHeight.value = String(Math.max(2, Math.round(height / 2) * 2));
+    }
+  }
+
+  const scale = selectedScale();
+  let warning = "";
+  if (scale?.mode === "both") {
+    const source = scaleSourceSize();
+    if (
+      source.width > 0 &&
+      source.height > 0 &&
+      Math.abs(source.width / source.height - scale.width / scale.height) >
+        0.001
+    ) {
+      warning = "Scaling both width/height may deform original video";
+    }
+  } else if (scale?.adjustment) {
+    const dimension = scale.mode === "width" ? "Height" : "Width";
+    if (scale.adjustment === "pad") {
+      warning = `${dimension} will be padded with black ${scale.mode === "width" ? "on top/bottom" : "on left/right"}`;
+    } else {
+      warning = `${dimension} will be cut ${scale.mode === "width" ? "on top/bottom" : "on left/right"}, centered`;
+    }
+  }
+  scaleWarning.textContent = warning;
+  setHidden(scaleWarning, warning.length === 0);
 }
 
 // ── Trim config — Trim state ──────────────────────────────────────────────────
@@ -858,10 +1065,13 @@ btnPickAudio.addEventListener("click", async () => {
 
 function clearAllActions(): void {
   for (const chk of [
-    chkTrim,
+    chkNiceTrim,
+    chkFastTrim,
     chkCrop,
     chkDownsample,
-    chkDownscale,
+    chkScale,
+    chkFps,
+    chkSlowdown,
     chkCompress,
     chkAudioRemove,
     chkAudioMap,
@@ -881,6 +1091,11 @@ function clearAllActions(): void {
   mcRanges = [];
   updateMcLabels();
   updateMcRangesDisplay();
+  selectScaleResolution.value = "1280x720";
+  chkWidthFollows.checked = false;
+  chkHeightFollows.checked = true;
+  chkFpsSource.checked = true;
+  inputFps.disabled = true;
 }
 
 btnClearAll.addEventListener("click", () => {
@@ -894,18 +1109,29 @@ btnExecute.addEventListener("click", async () => {
   const options = {
     filePath: currentVideoPath,
     trim:
-      chkTrim.checked && rangeStart !== null && rangeEnd !== null
-        ? { start: formatTime(rangeStart), end: formatTime(rangeEnd) }
+      (chkNiceTrim.checked || chkFastTrim.checked) &&
+      rangeStart !== null &&
+      rangeEnd !== null
+        ? {
+            mode: chkFastTrim.checked ? ("fast" as const) : ("nice" as const),
+            start: rangeStart,
+            end: rangeEnd,
+          }
         : undefined,
     crop: chkCrop.checked ? (computeCrop() ?? undefined) : undefined,
     downsample: chkDownsample.checked
       ? { nth: Math.max(1, Math.floor(Number(inputNthFrame.value))) }
       : undefined,
-    downscale: chkDownscale.checked
-      ? { width: Math.max(1, Math.floor(Number(inputScaleWidth.value))) }
-      : undefined,
+    scale: chkScale.checked ? (selectedScale() ?? undefined) : undefined,
     compress: chkCompress.checked
       ? { crf: Math.max(0, Math.floor(Number(inputCrf.value))) }
+      : undefined,
+    frameRate:
+      chkFps.checked && !chkFpsSource.checked
+        ? Math.max(1, Number(inputFps.value))
+        : undefined,
+    slowdown: chkSlowdown.checked
+      ? Math.max(0.01, Number(inputSlowdown.value))
       : undefined,
     audio: chkAudioRemove.checked
       ? ("remove" as const)

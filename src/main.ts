@@ -4,6 +4,11 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
 import started from "electron-squirrel-startup";
+import {
+  buildFfmpegArgs,
+  normalizedEncodingArgs,
+  type RunOptions,
+} from "./operations";
 
 const execFileAsync = promisify(execFile);
 
@@ -185,19 +190,6 @@ ipcMain.handle("dialog:open-audio", async (_event, defaultPath?: string) => {
   return canceled ? null : filePaths[0];
 });
 
-interface RunOptions {
-  filePath: string;
-  trim?: { start: string; end: string };
-  crop?: { w: number; h: number; x: number; y: number };
-  downsample?: { nth: number };
-  downscale?: { width: number };
-  compress?: { crf: number };
-  audio: "none" | "remove" | "map";
-  audioFile?: string;
-  convert: boolean;
-  multiConcat?: { ranges: { start: number; end: number }[] };
-}
-
 function twoDigits(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -210,18 +202,7 @@ function timestamp(): string {
 }
 
 ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
-  const {
-    filePath,
-    trim,
-    crop,
-    downsample,
-    downscale,
-    compress,
-    audio,
-    audioFile,
-    convert,
-    multiConcat,
-  } = opts;
+  const { filePath, convert, multiConcat } = opts;
 
   const FFMPEG = getFfmpegPath();
 
@@ -263,7 +244,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
     const concatInputs: string[] = [];
     ranges.forEach((r, i) => {
       segments.push(
-        `[0:v]trim=start=${r.start}:end=${r.end},setpts=PTS-STARTPTS[v${i}]`,
+        `[0:v]trim=start=${r.start}:end=${r.end},setpts=PTS-STARTPTS,setsar=1[v${i}]`,
       );
       if (hasAudio) {
         segments.push(
@@ -286,6 +267,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
       "-map",
       "[v]",
       ...(hasAudio ? ["-map", "[a]"] : []),
+      ...normalizedEncodingArgs(),
       "-y",
       outputPath,
     ];
@@ -298,49 +280,7 @@ ipcMain.handle("process:run", async (_event, opts: RunOptions) => {
     }
   }
 
-  const args: string[] = [];
-
-  // Input-level trim (fast seek) must come before -i.
-  if (trim) args.push("-ss", trim.start, "-to", trim.end);
-  args.push("-i", filePath);
-  if (audio === "map" && audioFile) args.push("-i", audioFile);
-
-  // Video filter chain (order: crop, downsample, downscale).
-  const filters: string[] = [];
-  if (crop) filters.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
-  if (downsample) {
-    // \, escapes the comma inside the select expression.
-    filters.push(
-      `select='not(mod(n\\,${downsample.nth}))'`,
-      "setpts=N/FRAME_RATE/TB",
-    );
-  }
-  if (downscale) filters.push(`scale=${downscale.width}:-2`);
-
-  const reencodeVideo = Boolean(crop || downsample || downscale || compress);
-  if (filters.length) args.push("-vf", filters.join(","));
-
-  if (reencodeVideo) {
-    args.push("-c:v", "libx264");
-    if (compress) args.push("-crf", String(compress.crf));
-    // Keep original audio untouched unless it's being removed/replaced.
-    if (audio === "none") args.push("-c:a", "copy");
-  } else if (audio === "map") {
-    // Only the audio changes → copy the video stream.
-    args.push("-c:v", "copy");
-  } else {
-    // Nothing needs re-encoding → straight stream copy.
-    args.push("-c", "copy");
-  }
-
-  // Audio handling.
-  if (audio === "remove") {
-    args.push("-an");
-  } else if (audio === "map") {
-    args.push("-map", "0:v:0", "-map", "1:a:0", "-q:a", "0", "-shortest");
-  }
-
-  args.push("-y", outputPath);
+  const args = buildFfmpegArgs(opts, outputPath);
 
   const command = `${FFMPEG} ${args.join(" ")}`;
   try {
