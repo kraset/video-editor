@@ -192,10 +192,70 @@ body {
 
 #controls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
   padding: 8px 0 0;
   width: 100%;
+}
+
+#primary-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+#playback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.skip-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.player-icon-btn {
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.player-icon-btn:hover {
+  background: #2f82e0;
+}
+
+.playback-setting {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 190px) 5ch;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.playback-setting input {
+  accent-color: #4a9eff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.playback-setting output {
+  color: #4a9eff;
+  font-family: "Courier New", Courier, monospace;
+  text-align: right;
 }
 
 #play-pause-btn {
@@ -470,6 +530,20 @@ body {
 #video-wrapper {
   position: relative;
   line-height: 0; /* collapse whitespace below video */
+}
+
+#current-time-display {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 #crop-canvas {

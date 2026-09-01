@@ -52,17 +52,67 @@
         <div id="video-wrapper">
           <video id="video"></video>
           <canvas id="crop-canvas"></canvas>
+          <span id="current-time-display">00:00:00.00</span>
         </div>
         <div id="controls">
-          <button id="play-pause-btn" aria-label="Play">&#9654;</button>
-          <input
-            type="range"
-            id="progress"
-            min="0"
-            max="100"
-            value="0"
-            step="0.01"
-          />
+          <div id="primary-controls">
+            <button id="play-pause-btn" aria-label="Play">&#9654;</button>
+            <input
+              type="range"
+              id="progress"
+              min="0"
+              max="100"
+              value="0"
+              step="0.01"
+              aria-label="Video position"
+            />
+          </div>
+          <div id="playback-controls">
+            <div class="skip-controls">
+              <button
+                class="player-icon-btn"
+                id="skip-previous-btn"
+                aria-label="Skip backward"
+                title="Skip backward"
+              >
+                &#x23EE;
+              </button>
+              <button
+                class="player-icon-btn"
+                id="skip-next-btn"
+                aria-label="Skip forward"
+                title="Skip forward"
+              >
+                &#x23ED;
+              </button>
+            </div>
+            <label class="playback-setting" for="step-size-slider">
+              <span>Step size</span>
+              <input
+                type="range"
+                id="step-size-slider"
+                min="0"
+                max="7"
+                value="3"
+                step="1"
+              />
+              <output id="step-size-value" for="step-size-slider">1 s</output>
+            </label>
+            <label class="playback-setting" for="play-speed-slider">
+              <span>Play speed</span>
+              <input
+                type="range"
+                id="play-speed-slider"
+                min="0"
+                max="8"
+                value="6"
+                step="1"
+              />
+              <output id="play-speed-value" for="play-speed-slider"
+                >100%</output
+              >
+            </label>
+          </div>
         </div>
       </div>
     </div>

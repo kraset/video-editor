@@ -190,6 +190,27 @@ const playPauseBtn = document.getElementById(
   "play-pause-btn",
 ) as HTMLButtonElement;
 const progress = document.getElementById("progress") as HTMLInputElement;
+const currentTimeDisplay = document.getElementById(
+  "current-time-display",
+) as HTMLSpanElement;
+const skipPreviousBtn = document.getElementById(
+  "skip-previous-btn",
+) as HTMLButtonElement;
+const skipNextBtn = document.getElementById(
+  "skip-next-btn",
+) as HTMLButtonElement;
+const stepSizeSlider = document.getElementById(
+  "step-size-slider",
+) as HTMLInputElement;
+const stepSizeValue = document.getElementById(
+  "step-size-value",
+) as HTMLOutputElement;
+const playSpeedSlider = document.getElementById(
+  "play-speed-slider",
+) as HTMLInputElement;
+const playSpeedValue = document.getElementById(
+  "play-speed-value",
+) as HTMLOutputElement;
 
 const actionsSection = document.getElementById("actions") as HTMLDivElement;
 
@@ -536,6 +557,17 @@ video.addEventListener("ended", () => {
 // ── Progress bar ──────────────────────────────────────────────────────────────
 
 let isSeeking = false;
+const stepSizes = [0.05, 0.1, 0.5, 1, 3, 5, 10, 30];
+const playSpeeds = [0.1, 0.25, 0.33, 0.5, 0.66, 0.75, 1, 1.5, 2];
+
+function selectedStepSize(): number {
+  return stepSizes[Number(stepSizeSlider.value)];
+}
+
+function updateCurrentTimeDisplay(): void {
+  currentTimeDisplay.textContent = formatTime(video.currentTime, 2);
+}
+
 progress.addEventListener("pointerdown", () => {
   isSeeking = true;
 });
@@ -544,6 +576,7 @@ window.addEventListener("pointerup", () => {
 });
 
 video.addEventListener("timeupdate", () => {
+  updateCurrentTimeDisplay();
   if (!isSeeking && video.duration) {
     progress.value = String((video.currentTime / video.duration) * 100);
     updateProgressFill();
@@ -553,11 +586,33 @@ progress.addEventListener("input", () => {
   if (video.duration) {
     video.currentTime = (Number(progress.value) / 100) * video.duration;
     updateProgressFill();
+    updateCurrentTimeDisplay();
   }
 });
 function updateProgressFill(): void {
   progress.style.setProperty("--val", `${progress.value}%`);
 }
+
+skipPreviousBtn.addEventListener("click", () => {
+  video.currentTime = Math.max(0, video.currentTime - selectedStepSize());
+  updateCurrentTimeDisplay();
+});
+
+skipNextBtn.addEventListener("click", () => {
+  const end = Number.isFinite(video.duration) ? video.duration : 0;
+  video.currentTime = Math.min(end, video.currentTime + selectedStepSize());
+  updateCurrentTimeDisplay();
+});
+
+stepSizeSlider.addEventListener("input", () => {
+  stepSizeValue.value = `${selectedStepSize()} s`;
+});
+
+playSpeedSlider.addEventListener("input", () => {
+  const speed = playSpeeds[Number(playSpeedSlider.value)];
+  video.playbackRate = speed;
+  playSpeedValue.value = `${Math.round(speed * 100)}%`;
+});
 
 // ── Actions — ReadyForAction state ────────────────────────────────────────────
 
@@ -599,11 +654,12 @@ function onCheckboxChange(): void {
 
 // ── Trim config — Trim state ──────────────────────────────────────────────────
 
-function formatTime(seconds: number): string {
+function formatTime(seconds: number, fractionDigits = 3): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
+  const secondWidth = fractionDigits > 0 ? fractionDigits + 3 : 2;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(fractionDigits).padStart(secondWidth, "0")}`;
 }
 
 function updateTrimLabels(): void {
