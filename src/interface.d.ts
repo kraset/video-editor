@@ -1,17 +1,4 @@
-export {};
-
-interface RunOptions {
-  filePath: string;
-  trim?: { start: string; end: string };
-  crop?: { w: number; h: number; x: number; y: number };
-  downsample?: { nth: number };
-  downscale?: { width: number };
-  compress?: { crf: number };
-  audio: "none" | "remove" | "map";
-  audioFile?: string;
-  convert: boolean;
-  multiConcat?: { ranges: { start: number; end: number }[] };
-}
+import type { RunOptions } from "./operations";
 
 interface RunResult {
   success: boolean;
