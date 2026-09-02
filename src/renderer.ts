@@ -261,6 +261,15 @@ const configSectionCrop = document.getElementById(
 const cropCoordDisplay = document.getElementById(
   "crop-coord-display",
 ) as HTMLDivElement;
+const cropInstruction = document.getElementById(
+  "crop-instruction",
+) as HTMLParagraphElement;
+const chkCropFixedSize = document.getElementById(
+  "chk-crop-fixed-size",
+) as HTMLInputElement;
+const selectCropFixedSize = document.getElementById(
+  "select-crop-fixed-size",
+) as HTMLSelectElement;
 const btnResetArea = document.getElementById(
   "btn-reset-area",
 ) as HTMLButtonElement;
@@ -1014,31 +1023,89 @@ function drawCropRect(end?: { x: number; y: number }): void {
   ctx.fillRect(x + w, y, cropCanvas.width - x - w, h); // right
 }
 
-function updateCropDisplay(end?: { x: number; y: number }): void {
+function fixedCropAtPointer(pointer: {
+  x: number;
+  y: number;
+}): { start: { x: number; y: number }; end: { x: number; y: number } } | null {
+  const [width, height] = selectCropFixedSize.value.split("x").map(Number);
+  const rect = video.getBoundingClientRect();
+  if (
+    width > video.videoWidth ||
+    height > video.videoHeight ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  )
+    return null;
+
+  const displayWidth = (width * rect.width) / video.videoWidth;
+  const displayHeight = (height * rect.height) / video.videoHeight;
+  const x = Math.min(
+    Math.max(0, pointer.x - displayWidth / 2),
+    rect.width - displayWidth,
+  );
+  const y = Math.min(
+    Math.max(0, pointer.y - displayHeight / 2),
+    rect.height - displayHeight,
+  );
+  return {
+    start: { x, y },
+    end: { x: x + displayWidth, y: y + displayHeight },
+  };
+}
+
+function drawFixedCropPreview(
+  area: ReturnType<typeof fixedCropAtPointer>,
+): void {
+  clearCropCanvas();
+  if (!area) return;
+  const ctx = cropCanvas.getContext("2d");
+  if (!ctx) return;
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(
+    area.start.x,
+    area.start.y,
+    area.end.x - area.start.x,
+    area.end.y - area.start.y,
+  );
+  ctx.setLineDash([]);
+}
+
+function updateCropDisplay(
+  end?: { x: number; y: number },
+  start = cropStart,
+): void {
   const endPt = end ?? cropEnd;
   const rect = video.getBoundingClientRect();
   const scaleX = rect.width > 0 ? video.videoWidth / rect.width : 1;
   const scaleY = rect.height > 0 ? video.videoHeight / rect.height : 1;
-  const x1 = cropStart
-    ? Math.round(Math.min(cropStart.x, endPt?.x ?? cropStart.x) * scaleX)
+  const x1 = start
+    ? Math.round(Math.min(start.x, endPt?.x ?? start.x) * scaleX)
     : 0;
-  const y1 = cropStart
-    ? Math.round(Math.min(cropStart.y, endPt?.y ?? cropStart.y) * scaleY)
+  const y1 = start
+    ? Math.round(Math.min(start.y, endPt?.y ?? start.y) * scaleY)
     : 0;
-  const x2 = endPt
-    ? Math.round(Math.max(cropStart!.x, endPt.x) * scaleX)
+  const x2 = start
+    ? Math.round(Math.max(start.x, endPt?.x ?? start.x) * scaleX)
     : video.videoWidth;
-  const y2 = endPt
-    ? Math.round(Math.max(cropStart!.y, endPt.y) * scaleY)
+  const y2 = start
+    ? Math.round(Math.max(start.y, endPt?.y ?? start.y) * scaleY)
     : video.videoHeight;
-  cropCoordDisplay.textContent = `Define crop area: top-left (${x1}, ${y1}) → bottom-right (${x2}, ${y2})`;
+  cropCoordDisplay.textContent = `Define crop area: top-left (${x1}, ${y1}) → bottom-right (${x2}, ${y2}) | Size: ${x2 - x1} × ${y2 - y1}`;
 }
 
 cropCanvas.addEventListener("pointermove", (e) => {
-  if (!cropStart || cropEnd) return; // only preview after first click
   const rect = cropCanvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  if (chkCropFixedSize.checked && !cropEnd) {
+    const area = fixedCropAtPointer({ x, y });
+    drawFixedCropPreview(area);
+    if (area) updateCropDisplay(area.end, area.start);
+    return;
+  }
+  if (!cropStart || cropEnd) return; // only preview after first click
   // Only draw preview when pointer is to the right of and below the start point
   if (x > cropStart.x && y > cropStart.y) {
     drawCropRect({ x, y });
@@ -1053,6 +1120,18 @@ cropCanvas.addEventListener("click", (e) => {
   const rect = cropCanvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  if (chkCropFixedSize.checked) {
+    const area = fixedCropAtPointer({ x, y });
+    if (!area) return;
+    cropStart = area.start;
+    cropEnd = area.end;
+    drawCropRect();
+    updateCropDisplay();
+    cropCanvas.classList.remove("active");
+    cropCanvas.classList.add("visible");
+    refreshUI();
+    return;
+  }
   if (!cropStart) {
     cropStart = { x, y };
     updateCropDisplay();
@@ -1067,7 +1146,7 @@ cropCanvas.addEventListener("click", (e) => {
   }
 });
 
-btnResetArea.addEventListener("click", () => {
+function resetCropArea(): void {
   cropStart = null;
   cropEnd = null;
   clearCropCanvas();
@@ -1075,7 +1154,54 @@ btnResetArea.addEventListener("click", () => {
   cropCanvas.classList.add("active");
   cropCanvas.classList.remove("visible");
   refreshUI();
+}
+
+chkCropFixedSize.addEventListener("change", () => {
+  setHidden(selectCropFixedSize, !chkCropFixedSize.checked);
+  cropInstruction.textContent = chkCropFixedSize.checked
+    ? "Move the pointer to position the area, then click to select it."
+    : "Click top-left corner, then bottom-right corner on the video.";
+  resetCropArea();
 });
+
+selectCropFixedSize.addEventListener("change", resetCropArea);
+
+function snapCropToGrid(): void {
+  const crop = computeCrop();
+  if (!crop || !cropStart || !cropEnd) return;
+  const rect = video.getBoundingClientRect();
+  const scaleX = video.videoWidth / rect.width;
+  const scaleY = video.videoHeight / rect.height;
+  const availableWidth = video.videoWidth - crop.x;
+  const availableHeight = video.videoHeight - crop.y;
+  const width = Math.min(
+    Math.max(10, Math.round(crop.w / 10) * 10),
+    Math.floor(availableWidth / 10) * 10,
+  );
+  const height = Math.min(
+    Math.max(10, Math.round(crop.h / 10) * 10),
+    Math.floor(availableHeight / 10) * 10,
+  );
+  if (width < 10 || height < 10) return;
+
+  cropEnd = {
+    x: (crop.x + width) / scaleX,
+    y: (crop.y + height) / scaleY,
+  };
+  drawCropRect();
+  updateCropDisplay();
+  refreshUI();
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() !== "s" || !chkCrop.checked || !cropEnd) return;
+  const target = e.target as HTMLElement | null;
+  if (target?.matches("input, select, textarea, [contenteditable]")) return;
+  e.preventDefault();
+  snapCropToGrid();
+});
+
+btnResetArea.addEventListener("click", resetCropArea);
 
 /** Convert display-space crop rectangle to actual video pixels. */
 function computeCrop(): { w: number; h: number; x: number; y: number } | null {

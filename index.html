@@ -173,10 +173,22 @@
       <div id="crop-coord-display">
         Define crop area: top-left (0, 0) &rarr; bottom-right (0, 0)
       </div>
-      <p class="crop-instruction">
+      <p class="crop-instruction" id="crop-instruction">
         Click top-left corner, then bottom-right corner on the video.
       </p>
       <div class="crop-buttons">
+        <label class="inline-check">
+          <input type="checkbox" id="chk-crop-fixed-size" /> Use Fixed-sizes
+        </label>
+        <select id="select-crop-fixed-size" hidden>
+          <option value="1600x900">1600 × 900</option>
+          <option value="1280x720">1280 × 720</option>
+          <option value="1024x576">1024 × 576</option>
+          <option value="800x450">800 × 450</option>
+          <option value="640x360">640 × 360</option>
+          <option value="1000x1000">1000 × 1000</option>
+          <option value="500x500">500 × 500</option>
+        </select>
         <button class="action-btn" id="btn-reset-area">Reset Area</button>
       </div>
     </div>
