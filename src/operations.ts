@@ -107,7 +107,7 @@ export function buildFfmpegArgs(
   }
 
   const args = ["-i", filePath];
-  if (options.audio === "map" && options.audioFile) {
+  if (!downsample && options.audio === "map" && options.audioFile) {
     args.push("-i", options.audioFile);
   }
   if (trim?.mode === "nice") {
@@ -124,7 +124,7 @@ export function buildFfmpegArgs(
   if (downsample) {
     filters.push(
       `select='not(mod(n\\,${downsample.nth}))'`,
-      "setpts=N/FRAME_RATE/TB",
+      `setpts=(PTS-STARTPTS)/${downsample.nth}`,
     );
   }
   if (transform?.mirrorHorizontal) filters.push("hflip");
@@ -164,7 +164,7 @@ export function buildFfmpegArgs(
     args.push("-c", "copy");
   }
 
-  if (slowdown !== undefined || options.audio === "remove") {
+  if (downsample || slowdown !== undefined || options.audio === "remove") {
     args.push("-an");
   } else if (options.audio === "map") {
     args.push("-map", "0:v:0", "-map", "1:a:0", "-shortest");

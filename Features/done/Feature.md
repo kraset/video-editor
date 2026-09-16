@@ -71,7 +71,7 @@ Om source file är webm, default är convert till mp4, dvs kryssa i checkboxen "
 
 ## Exempel 1, multi action command: Kräver encoding
 ffmpeg -ss <trimStartTime> -to <trimEndTime> -i <myFile.webm> -i <newAudio> \
--vf "crop=<cropwidth>:<cropheight>:<startX>:<startY>,"select='not(mod(n\,2))',setpts=N/FRAME_RATE/TB",scale=<scaleWidthX>:-1" \
+-vf "crop=<cropwidth>:<cropheight>:<startX>:<startY>,"select='not(mod(n\,2))',setpts=(PTS-STARTPTS)/2",scale=<scaleWidthX>:-1" \
 -c:v libx264 -crf <compressionValue> \
 -map 0:v:0 -map 1:a:0 myFile_094812.mp4
 
